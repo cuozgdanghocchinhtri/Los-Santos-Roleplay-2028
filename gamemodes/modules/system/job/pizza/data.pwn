@@ -36,9 +36,9 @@
 #define PIZZA_NPC_Z                          (13.5547)
 #define PIZZA_NPC_A                          (90.0000)
 
-#define PIZZA_BOX_PICKUP_X                   (2111.3000)
-#define PIZZA_BOX_PICKUP_Y                   (-1806.5000)
-#define PIZZA_BOX_PICKUP_Z                   (13.5547)
+#define PIZZA_BOX_PICKUP_X           (2099.2500)
+#define PIZZA_BOX_PICKUP_Y           (-1809.6000)
+#define PIZZA_BOX_PICKUP_Z           (13.5547)
 
 #define PIZZA_VEHICLE_RETURN_X               (2090.5000)
 #define PIZZA_VEHICLE_RETURN_Y               (-1810.2000)
