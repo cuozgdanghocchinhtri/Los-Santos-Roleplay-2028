@@ -1,0 +1,78 @@
+{
+    "dependencies": [
+        {
+            "name": "MySQL",
+            "type": "github_release",
+            "repo": "pBlueG/SA-MP-MySQL",
+            "tag": "R41-4",
+            "asset_patterns": [
+                "^mysql-R41-4-win32\\.zip$",
+                "win32.*\\.zip$"
+            ],
+            "copies": [
+                {
+                    "find": "a_mysql.inc",
+                    "to": "qawno/include/a_mysql.inc"
+                },
+                {
+                    "find": "mysql.dll",
+                    "to": "plugins/mysql.dll"
+                },
+                {
+                    "find": "libmariadb.dll",
+                    "to": "libmariadb.dll"
+                },
+                {
+                    "find": "log-core.dll",
+                    "to": "log-core.dll"
+                }
+            ]
+        },
+        {
+            "name": "samp-bcrypt",
+            "type": "github_release",
+            "repo": "Sreyas-Sreelal/samp-bcrypt",
+            "tag": "0.4.1",
+            "asset_patterns": [
+                "win32.*\\.zip$",
+                "windows.*\\.zip$",
+                ".*win.*\\.zip$",
+                ".*\\.zip$"
+            ],
+            "copies": [
+                {
+                    "find": "samp_bcrypt.inc",
+                    "to": "qawno/include/samp_bcrypt.inc"
+                },
+                {
+                    "find": "samp_bcrypt.dll",
+                    "to": "plugins/samp_bcrypt.dll"
+                }
+            ]
+        },
+        {
+            "name": "YSI",
+            "type": "github_archive",
+            "repo": "pawn-lang/YSI-Includes",
+            "tag": "v5.10.0006",
+            "copy_directory_patterns": [
+                {
+                    "pattern": "YSI_*",
+                    "to": "qawno/include"
+                }
+            ]
+        }
+        {
+            "name": "YSI",
+            "type": "github_archive",
+            "repo": "pawn-lang/YSI-Includes",
+            "tag": "v5.10.0006",
+            "copy_directory_patterns": [
+                {
+                    "pattern": "YSI_*",
+                    "to": "qawno/include"
+                }
+            ]
+        }
+    ]
+}

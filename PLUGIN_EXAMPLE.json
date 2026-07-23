@@ -1,0 +1,21 @@
+{
+    "name": "TEN_PLUGIN",
+    "type": "github_release",
+    "repo": "OWNER/REPOSITORY",
+    "tag": "VERSION_TAG",
+    "asset_patterns": [
+        "win32.*\\.zip$",
+        "windows.*\\.zip$",
+        ".*\\.zip$"
+    ],
+    "copies": [
+        {
+            "find": "plugin_name.inc",
+            "to": "qawno/include/plugin_name.inc"
+        },
+        {
+            "find": "plugin_name.dll",
+            "to": "plugins/plugin_name.dll"
+        }
+    ]
+}
