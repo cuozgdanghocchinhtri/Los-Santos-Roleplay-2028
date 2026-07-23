@@ -1,4 +1,4 @@
-/*===============================================================================
+﻿/*===============================================================================
     Project        : A simple open.mp base gamemode
     Author         : Mido
     Date           : June 11, 2025
@@ -96,7 +96,11 @@
 #include "modules/system/job/pizza/core.pwn"
 #include "modules/system/job/pizza/commands.pwn"
 
-
+#include "modules/job/pizza/data.pwn"
+#include "modules/job/pizza/vehicle.pwn"
+#include "modules/job/pizza/ui.pwn"
+#include "modules/job/pizza/core.pwn"
+#include "modules/job/pizza/commands.pwn"
 
 #include "modules/system/job/commands.pwn"
 

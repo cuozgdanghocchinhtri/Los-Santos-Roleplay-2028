@@ -12,6 +12,14 @@
 #define PIZZA_RETURN_BONUS                  (100)
 #define PIZZA_BOX_OBJECT                    (1582)
 #define PIZZA_BOX_ATTACH_SLOT               (8)
+#define PIZZA_RECRUITER_SKIN                 (155)
+#define PIZZA_INTERACT_RANGE                 (2.5)
+#define PIZZA_VEHICLE_INTERACT_RANGE         (4.0)
+#define PIZZA_STORE_VEHICLE_RANGE            (12.0)
+#define PIZZA_DELIVERY_AREA_RANGE            (35.0)
+#define PIZZA_DELIVERY_XP                    (12)
+#define PIZZA_RETURN_XP                      (20)
+#define PIZZA_VEHICLE_SPAWN_CLEARANCE        (3.0)
 
 #define PIZZA_NPC_X                         (2105.2300)
 #define PIZZA_NPC_Y                         (-1806.5000)
@@ -26,6 +34,16 @@
 #define PIZZA_VEHICLE_SPAWN_Y               (-1810.2000)
 #define PIZZA_VEHICLE_SPAWN_Z               (13.1000)
 #define PIZZA_VEHICLE_SPAWN_A               (90.0000)
+
+new const Float:g_PizzaVehicleSpawns[][4] =
+{
+    {2095.3000, -1810.2000, 13.1000, 90.0000},
+    {2095.3000, -1813.4000, 13.1000, 90.0000},
+    {2095.3000, -1816.6000, 13.1000, 90.0000},
+    {2098.6000, -1810.2000, 13.1000, 90.0000},
+    {2098.6000, -1813.4000, 13.1000, 90.0000},
+    {2098.6000, -1816.6000, 13.1000, 90.0000}
+};
 
 #define PIZZA_VEHICLE_RETURN_X              (2090.5000)
 #define PIZZA_VEHICLE_RETURN_Y              (-1810.2000)
@@ -79,6 +97,9 @@ new
     g_PizzaRecruiterPickup = -1,
     g_PizzaBoxPickup = -1,
     g_PizzaReturnPickup = -1,
+    Text3D:g_PizzaRecruiterLabel = Text3D:INVALID_3DTEXT_ID,
+    Text3D:g_PizzaBoxLabel = Text3D:INVALID_3DTEXT_ID,
+    Text3D:g_PizzaReturnLabel = Text3D:INVALID_3DTEXT_ID,
 
     s_PizzaRentalVehicle[MAX_PLAYERS],
     Text3D:s_PizzaVehicleLabel[MAX_PLAYERS],
@@ -117,6 +138,7 @@ stock bool:Pizza_HasRentalVehicle(playerid)
     new const vehicleid = s_PizzaRentalVehicle[playerid];
 
     return Pizza_IsVehicleIndexValid(vehicleid) &&
+        IsValidVehicle(vehicleid) &&
         s_PizzaManagedOwner[vehicleid] == playerid &&
         s_PizzaManagedToken[vehicleid] == s_PizzaRentalToken[playerid];
 }
@@ -152,6 +174,55 @@ stock Float:Pizza_Distance2D(
         ((x1 - x2) * (x1 - x2)) +
         ((y1 - y2) * (y1 - y2))
     );
+}
+
+stock Pizza_ResetVehicleRegistry()
+{
+    for (new vehicleid = 0; vehicleid < MAX_VEHICLES; vehicleid++)
+    {
+        s_PizzaManagedOwner[vehicleid] = INVALID_PLAYER_ID;
+        s_PizzaManagedToken[vehicleid] = 0;
+    }
+    return 1;
+}
+
+stock Pizza_FindFreeVehicleSpawn()
+{
+    for (new spawn = 0; spawn < sizeof(g_PizzaVehicleSpawns); spawn++)
+    {
+        new bool:occupied = false;
+
+        for (new vehicleid = 1; vehicleid < MAX_VEHICLES; vehicleid++)
+        {
+            if (s_PizzaManagedOwner[vehicleid] == INVALID_PLAYER_ID)
+            {
+                continue;
+            }
+
+            if (!IsValidVehicle(vehicleid))
+            {
+                s_PizzaManagedOwner[vehicleid] = INVALID_PLAYER_ID;
+                s_PizzaManagedToken[vehicleid] = 0;
+                continue;
+            }
+
+            new Float:x, Float:y, Float:z;
+            GetVehiclePos(vehicleid, x, y, z);
+
+            if (Pizza_Distance2D(x, y, g_PizzaVehicleSpawns[spawn][0], g_PizzaVehicleSpawns[spawn][1]) <= PIZZA_VEHICLE_SPAWN_CLEARANCE &&
+                floatabs(z - g_PizzaVehicleSpawns[spawn][2]) <= 4.0)
+            {
+                occupied = true;
+                break;
+            }
+        }
+
+        if (!occupied)
+        {
+            return spawn;
+        }
+    }
+    return -1;
 }
 
 stock bool:Pizza_IsRentalVehicleNear(

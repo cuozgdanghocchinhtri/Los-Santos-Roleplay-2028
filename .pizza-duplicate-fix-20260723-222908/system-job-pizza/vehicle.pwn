@@ -11,7 +11,6 @@ stock Pizza_ClearRentalState(playerid)
 
     s_PizzaVehicleCargo[playerid] = 0;
     s_PizzaDeliveryPoint[playerid] = -1;
-    s_PizzaDeliveryDeadline[playerid] = 0;
     s_PizzaShiftDeliveries[playerid] = 0;
     return 1;
 }
@@ -27,8 +26,14 @@ stock Pizza_DestroyRentalVehicle(playerid)
         s_PizzaVehicleLabel[playerid] = Text3D:INVALID_3DTEXT_ID;
     }
 
-    // Clear the global mapping before destroying the vehicle. open.mp may
-    // reuse the same vehicle ID immediately for another rental.
+    if (IsPlayerConnected(playerid) &&
+        Pizza_IsVehicleIndexValid(vehicleid) &&
+        IsPlayerInVehicle(playerid, vehicleid))
+    {
+        RemovePlayerFromVehicle(playerid);
+    }
+
+    // Clear mapping BEFORE DestroyVehicle. Vehicle IDs can be reused.
     if (Pizza_IsVehicleIndexValid(vehicleid) &&
         s_PizzaManagedOwner[vehicleid] == playerid &&
         s_PizzaManagedToken[vehicleid] == rentalToken)
@@ -37,7 +42,11 @@ stock Pizza_DestroyRentalVehicle(playerid)
         s_PizzaManagedToken[vehicleid] = 0;
         s_PizzaRentalVehicle[playerid] = INVALID_VEHICLE_ID;
         s_PizzaRentalToken[playerid]++;
-        DestroyVehicle(vehicleid);
+
+        if (IsValidVehicle(vehicleid))
+        {
+            DestroyVehicle(vehicleid);
+        }
     }
     else
     {
@@ -51,34 +60,40 @@ stock Pizza_DestroyRentalVehicle(playerid)
 
 stock Pizza_RentVehicle(playerid)
 {
-    if (!Job_IsEmployed(playerid, JOB_PIZZA))
+    if (!Pizza_IsEmployee(playerid))
     {
-        SendClientMessage(
-            playerid,
-            COLOR_RED,
-            "Ban chua phai nhan vien Pizza Stack."
-        );
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban chua phai nhan vien Pizza Stack.", 4000);
         return 0;
     }
 
     if (Pizza_HasRentalVehicle(playerid))
     {
-        SendClientMessage(
-            playerid,
-            COLOR_RED,
-            "Ban dang thue mot chiec Pizzaboy."
-        );
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban dang co mot chiec Pizzaboy thue theo ca.", 4000);
         return 0;
+    }
+
+    // Stale local vehicle ID from a previous broken/aborted state.
+    if (s_PizzaRentalVehicle[playerid] != INVALID_VEHICLE_ID)
+    {
+        Pizza_DestroyRentalVehicle(playerid);
     }
 
     if (GetPlayerState(playerid) != PLAYER_STATE_ONFOOT)
     {
-        SendClientMessage(playerid, COLOR_RED, "Hay xuong xe truoc khi thue Pizzaboy.");
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Hay xuong xe truoc khi thue Pizzaboy.", 4000);
+        return 0;
+    }
+
+    new const spawn = Pizza_FindFreeVehicleSpawn();
+    if (spawn == -1)
+    {
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Bai xe Pizza Stack dang het cho trong. Hay thu lai sau.", 5000);
         return 0;
     }
 
     if (!Job_Start(playerid, JOB_PIZZA))
     {
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Khong the bat dau ca luc nay. Hay thu lai sau.", 4500);
         return 0;
     }
 
@@ -86,19 +101,19 @@ stock Pizza_RentVehicle(playerid)
 
     new const vehicleid = CreateVehicle(
         448,
-        PIZZA_VEHICLE_SPAWN_X,
-        PIZZA_VEHICLE_SPAWN_Y,
-        PIZZA_VEHICLE_SPAWN_Z,
-        PIZZA_VEHICLE_SPAWN_A,
+        g_PizzaVehicleSpawns[spawn][0],
+        g_PizzaVehicleSpawns[spawn][1],
+        g_PizzaVehicleSpawns[spawn][2],
+        g_PizzaVehicleSpawns[spawn][3],
         3,
         6,
         -1
     );
 
-    if (!Pizza_IsVehicleIndexValid(vehicleid))
+    if (!Pizza_IsVehicleIndexValid(vehicleid) || !IsValidVehicle(vehicleid))
     {
-        SendClientMessage(playerid, COLOR_RED, "Khong the tao xe thue luc nay.");
         Job_Stop(playerid, JOB_STOP_QUIT);
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Khong the tao Pizzaboy luc nay.", 4000);
         return 0;
     }
 
@@ -107,72 +122,56 @@ stock Pizza_RentVehicle(playerid)
     s_PizzaManagedToken[vehicleid] = s_PizzaRentalToken[playerid];
     s_PizzaVehicleCargo[playerid] = 0;
     s_PizzaDeliveryPoint[playerid] = -1;
-    s_PizzaDeliveryDeadline[playerid] = 0;
     s_PizzaShiftDeliveries[playerid] = 0;
 
-    new
-        playerName[MAX_PLAYER_NAME + 1],
-        labelText[128];
+    new labelText[128];
+    format(labelText, sizeof(labelText), "{FFFFFF}Pizza Boy\n{E53935}Chu so huu: {FFFFFF}%s", s_CharacterName[playerid]);
 
-    GetPlayerName(playerid, playerName, sizeof(playerName));
-    format(
-        labelText,
-        sizeof(labelText),
-        "{FFFFFF}Pizza Boy\n{FF5555}Chu so huu: %s",
-        playerName
-    );
-
-    s_PizzaVehicleLabel[playerid] = Create3DTextLabel(
-        labelText,
-        COLOR_WHITE,
-        0.0,
-        0.0,
-        0.0,
-        25.0,
-        0,
-        true
-    );
-    Attach3DTextLabelToVehicle(
-        s_PizzaVehicleLabel[playerid],
-        vehicleid,
-        0.0,
-        0.0,
-        1.0
-    );
+    s_PizzaVehicleLabel[playerid] = Create3DTextLabel(labelText, COLOR_WHITE, 0.0, 0.0, 0.0, 25.0, 0, true);
+    Attach3DTextLabelToVehicle(s_PizzaVehicleLabel[playerid], vehicleid, 0.0, 0.0, 1.0);
 
     SetVehicleHealth(vehicleid, 1000.0);
-    SetVehicleParamsEx(
-        vehicleid,
-        VEHICLE_PARAMS_ON,
-        VEHICLE_PARAMS_OFF,
-        VEHICLE_PARAMS_OFF,
-        VEHICLE_PARAMS_OFF,
-        VEHICLE_PARAMS_OFF,
-        VEHICLE_PARAMS_OFF,
-        VEHICLE_PARAMS_OFF
-    );
 
     if (!PutPlayerInVehicle(playerid, vehicleid, 0))
     {
-        SendClientMessage(
-            playerid,
-            COLOR_RED,
-            "Khong the dua ban vao xe. Hop dong thue da duoc huy."
-        );
         Job_Stop(playerid, JOB_STOP_QUIT);
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Khong the dua ban vao xe. Hop dong thue da huy.", 4500);
         return 0;
     }
 
-    SendClientMessage(
-        playerid,
-        COLOR_WHITE,
-        "Da thue Pizzaboy cua cong ty. Xe duoc gan owner rieng cho nhan vat cua ban."
-    );
-    SendClientMessage(
-        playerid,
-        COLOR_WHITE,
-        "Lai xe den pickup lay banh, xuong xe va nhan Y de bat dau chat hang."
-    );
+    ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Da thue Pizzaboy. Lai den diem lay banh va nhan Y de nhan hang.", 6000);
+    return 1;
+}
+
+stock Pizza_ReturnRentalVehicle(playerid)
+{
+    if (!Pizza_HasRentalVehicle(playerid))
+    {
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban khong co Pizzaboy dang thue.", 4000);
+        return 0;
+    }
+
+    if (!Pizza_IsRentalVehicleNear(playerid, PIZZA_VEHICLE_RETURN_X, PIZZA_VEHICLE_RETURN_Y, PIZZA_VEHICLE_RETURN_Z, 6.0))
+    {
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Hay dua Pizzaboy vao dung khu vuc tra xe.", 4000);
+        return 0;
+    }
+
+    if (Pizza_IsCarryingBox(playerid) || s_PizzaDeliveryPoint[playerid] >= 0)
+    {
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Hay hoan tat don hang va cat hop pizza truoc khi tra xe.", 4500);
+        return 0;
+    }
+
+    if (s_PizzaVehicleCargo[playerid] > 0)
+    {
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Trong xe van con pizza. Hay giao het hang truoc khi tra xe.", 4500);
+        return 0;
+    }
+
+    Job_CompleteRun(playerid, PIZZA_RETURN_BONUS, PIZZA_RETURN_XP);
+    Job_Stop(playerid, JOB_STOP_COMPLETE);
+    ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Da ban giao Pizzaboy. Thuong ket ca: $100.", 5000);
     return 1;
 }
 
@@ -191,11 +190,7 @@ hook OnPlayerStateChange(playerid, newstate, oldstate)
     if (Pizza_IsCarryingBox(playerid))
     {
         RemovePlayerFromVehicle(playerid);
-        SendClientMessage(
-            playerid,
-            COLOR_RED,
-            "Ban dang cam hop pizza. Nhan Y gan Pizzaboy de chat/cat banh truoc."
-        );
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban dang cam hop pizza. Nhan Y gan Pizzaboy de cat banh truoc.", 4500);
         return 1;
     }
 
@@ -212,11 +207,7 @@ hook OnPlayerStateChange(playerid, newstate, oldstate)
         s_PizzaRentalVehicle[playerid] != vehicleid)
     {
         RemovePlayerFromVehicle(playerid);
-        SendClientMessage(
-            playerid,
-            COLOR_RED,
-            "Pizzaboy nay thuoc hop dong thue cua nhan vien khac."
-        );
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Pizzaboy nay thuoc hop dong thue cua nhan vien khac.", 4500);
     }
     return 1;
 }
@@ -259,7 +250,8 @@ hook OnPlayerDisconnect(playerid, reason)
 {
     #pragma unused reason
 
-    if (Pizza_HasRentalVehicle(playerid))
+    if (Pizza_HasRentalVehicle(playerid) ||
+        s_PizzaRentalVehicle[playerid] != INVALID_VEHICLE_ID)
     {
         Pizza_DestroyRentalVehicle(playerid);
     }
@@ -277,20 +269,11 @@ hook OnPlayerJobStopping(playerid, jobid, reason)
 
     if (reason == JOB_STOP_VEHICLE_LOST)
     {
-        SendClientMessage(
-            playerid,
-            COLOR_RED,
-            "Pizzaboy da bi pha huy. Hop dong thue va ca lam viec da bi huy."
-        );
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Pizzaboy da bi pha huy. Xe va hang tam da duoc thu hoi.", 5000);
     }
     else if (reason == JOB_STOP_DEATH)
     {
-        SendClientMessage(
-            playerid,
-            COLOR_RED,
-            "Ca Pizza da huy vi ban bat tinh. Xe va du lieu hang da duoc thu hoi."
-        );
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ca Pizza da huy vi ban bat tinh. Xe va hang tam da duoc thu hoi.", 5000);
     }
     return 1;
 }
-

@@ -1,47 +1,18 @@
-LSRP DEPENDENCY MANAGER
-=======================
+LOI:
+gamemodes\modules\system\job\pizza\data.pwn(1) : error 010: invalid function or declaration
 
-Dat tat ca file trong ZIP vao root LSRP_SERVER.
+NGUYEN NHAN:
+Script fix truoc da dung PowerShell Set-Content -Encoding UTF8.
+Tren Windows PowerShell 5.1, cach nay co the them UTF-8 BOM vao dau file include .pwn.
+Pawn compiler gap BOM o giua main source (tai file #include) co the bao error 010 ngay line 1.
 
-Lan sau muon them plugin moi:
-1. Mo dependencies.json.
-2. Them mot object vao mang "dependencies".
-3. Ghi repo GitHub, tag va ten file can copy.
-4. Chay INSTALL_DEPS.bat.
+CACH FIX:
+1. Giai nen vao root project.
+2. Chay FIX_ENCODING.bat.
+3. Compile lai.
 
-Vi du plugin co:
-  abc.inc
-  abc.dll
+Script chi rewrite tat ca file .pwn thanh UTF-8 WITHOUT BOM.
+No KHONG sua logic/code.
 
-Them:
-
-{
-    "name": "ABC Plugin",
-    "type": "github_release",
-    "repo": "author/abc-plugin",
-    "tag": "v1.0.0",
-    "asset_patterns": [
-        "win32.*\\.zip$",
-        ".*\\.zip$"
-    ],
-    "copies": [
-        {
-            "find": "abc.inc",
-            "to": "qawno/include/abc.inc"
-        },
-        {
-            "find": "abc.dll",
-            "to": "plugins/abc.dll"
-        }
-    ]
-}
-
-Sau do chay INSTALL_DEPS.bat.
-
-Luu y:
-- Tag phai dung tag GitHub Release.
-- Package release hien tai can la ZIP.
-- Ten DLL/INC trong "find" phai dung ten file that su trong ZIP.
-- Plugin runtime legacy thuong vao plugins/.
-- Include compile vao qawno/include/.
-- Component open.mp co the can destination components/ thay vi plugins/.
+Cac warning 217 loose indentation va warning 203 never used KHONG lam compilation fail.
+Xu ly sau khi error 010 bien mat.

@@ -90,13 +90,11 @@
 #include "modules/system/job/persistence.pwn"
 #include "modules/system/job/core.pwn"
 
-#include "modules/system/job/pizza/data.pwn"
-#include "modules/system/job/pizza/vehicle.pwn"
-#include "modules/system/job/pizza/ui.pwn"
-#include "modules/system/job/pizza/core.pwn"
-#include "modules/system/job/pizza/commands.pwn"
-
-
+#include "modules/job/pizza/data.pwn"
+#include "modules/job/pizza/vehicle.pwn"
+#include "modules/job/pizza/ui.pwn"
+#include "modules/job/pizza/core.pwn"
+#include "modules/job/pizza/commands.pwn"
 
 #include "modules/system/job/commands.pwn"
 
@@ -114,4 +112,3 @@
 
 // This fallback must remain after every command module.
 #include "modules/system/help/unknown.pwn"
-

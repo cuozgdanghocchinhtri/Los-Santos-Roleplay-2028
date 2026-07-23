@@ -271,6 +271,68 @@ Ban co chac muon cham dut hop dong voi Pizza Stack?";
     return 1;
 }
 
+stock Pizza_HireEmployee(playerid)
+{
+    if (!IsPlayerCharacterLoaded(playerid))
+    {
+        return 0;
+    }
+
+    if (!Job_IsProgressReady(playerid))
+    {
+        if (!s_PlayerJobProgressLoading[playerid])
+        {
+            Job_LoadProgress(playerid);
+        }
+
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ho so nghe nghiep dang duoc tai. Hay thu lai sau giay lat.", 4500);
+        return 0;
+    }
+
+    if (Job_IsEmployed(playerid, JOB_PIZZA))
+    {
+        Pizza_ShowEmployeeMenu(playerid);
+        return 1;
+    }
+
+    if (!Job_Hire(playerid, JOB_PIZZA, PIZZA_DAILY_SALARY, PIZZA_DAILY_ALLOWANCE_TOTAL))
+    {
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Khong the tiep nhan ho so luc nay.", 4000);
+        return 0;
+    }
+
+    ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ho so da duoc duyet. Chao mung ban gia nhap Pizza Stack.", 5500);
+    Pizza_ShowEmployeeProfile(playerid);
+    return 1;
+}
+
+stock Pizza_ResignEmployee(playerid)
+{
+    if (!Job_IsEmployed(playerid, JOB_PIZZA))
+    {
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban khong co hop dong lao dong voi Pizza Stack.", 4000);
+        return 0;
+    }
+
+    if (Job_IsActive(playerid, JOB_PIZZA))
+    {
+        Job_Stop(playerid, JOB_STOP_QUIT);
+    }
+    else if (Pizza_HasRentalVehicle(playerid))
+    {
+        Pizza_DestroyRentalVehicle(playerid);
+    }
+
+    if (!Job_Resign(playerid, JOB_PIZZA))
+    {
+        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Khong the xu ly yeu cau nghi viec luc nay.", 4000);
+        return 0;
+    }
+
+    ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Hop dong Pizza Stack da duoc cham dut. Ho so thanh tich van duoc luu.", 5500);
+    return 1;
+}
+
 hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 {
     #pragma unused inputtext
