@@ -25,6 +25,11 @@ enum
 new PlayerText:s_CinematicFadeTD[MAX_PLAYERS];
 #define CINEMATIC_VIEW_COUNT (5)
 new bool:s_CinematicNewCharacter[MAX_PLAYERS];
+new
+    Float:s_CinematicTargetX[MAX_PLAYERS],
+    Float:s_CinematicTargetY[MAX_PLAYERS],
+    Float:s_CinematicTargetZ[MAX_PLAYERS],
+    Float:s_CinematicTargetA[MAX_PLAYERS];
 new const Float:g_CinematicCamera[CINEMATIC_VIEW_COUNT][3] =
 {
     {1545.0, -1350.0, 125.0},
@@ -260,7 +265,7 @@ Cinematic_StartSelector(playerid)
     TogglePlayerSpectating(playerid, true);
 
     s_CinematicSelectorActive[playerid] = true;
-    s_CinematicSelectorView[playerid] = 0;
+    s_CinematicSelectorView[playerid] = random(CINEMATIC_VIEW_COUNT);
 
     Cinematic_FadeOut(playerid, CINEMATIC_ACTION_SELECTOR);
     return 1;
@@ -400,6 +405,11 @@ Cinematic_StartSpawn(playerid)
     s_CinematicLoginPreparing[playerid] = true;
     s_CinematicNewCharacter[playerid] = false;
 
+    s_CinematicTargetX[playerid] = s_CharacterPosX[playerid];
+    s_CinematicTargetY[playerid] = s_CharacterPosY[playerid];
+    s_CinematicTargetZ[playerid] = s_CharacterPosZ[playerid];
+    s_CinematicTargetA[playerid] = s_CharacterPosA[playerid];
+
     // Spawn khi man hinh da den.
     Cinematic_FadeOut(playerid, CINEMATIC_ACTION_SPAWN);
     return 1;
@@ -418,14 +428,14 @@ Cinematic_SetupSpawn(playerid)
         return 0;
     }
 
-    SetPlayerInterior(playerid, 0);
-    SetPlayerVirtualWorld(playerid, 0);
+    SetPlayerInterior(playerid, s_CharacterInterior[playerid]);
+    SetPlayerVirtualWorld(playerid, s_CharacterVirtualWorld[playerid]);
 
     SetSpawnInfo(playerid, NO_TEAM, s_CharacterSkin[playerid],
-        GANTON_SPAWN_X,
-        GANTON_SPAWN_Y,
-        GANTON_SPAWN_Z,
-        GANTON_SPAWN_A
+        s_CinematicTargetX[playerid],
+        s_CinematicTargetY[playerid],
+        s_CinematicTargetZ[playerid],
+        s_CinematicTargetA[playerid]
     );
 
     // Luc nay man hinh dang den hoan toan.
@@ -444,8 +454,8 @@ Cinematic_SetupSpawn(playerid)
 
 Cinematic_PreparePlayer(playerid)
 {
-    SetPlayerInterior(playerid, 0);
-    SetPlayerVirtualWorld(playerid, 0);
+    SetPlayerInterior(playerid, s_CharacterInterior[playerid]);
+    SetPlayerVirtualWorld(playerid, s_CharacterVirtualWorld[playerid]);
 
     SetPlayerSkin(playerid, s_CharacterSkin[playerid]);
 
@@ -456,8 +466,8 @@ Cinematic_PreparePlayer(playerid)
     SetPlayerHealth(playerid, s_CharacterHealth[playerid]);
     SetPlayerArmour(playerid, s_CharacterArmour[playerid]);
 
-    SetPlayerPos(playerid, GANTON_SPAWN_X, GANTON_SPAWN_Y, GANTON_SPAWN_Z);
-    SetPlayerFacingAngle(playerid, GANTON_SPAWN_A);
+    SetPlayerPos(playerid, s_CinematicTargetX[playerid], s_CinematicTargetY[playerid], s_CinematicTargetZ[playerid]);
+    SetPlayerFacingAngle(playerid, s_CinematicTargetA[playerid]);
 
     TogglePlayerControllable(playerid, false);
 
@@ -475,9 +485,9 @@ public Cinematic_StartZoomStageOne(playerid)
         return 0;
     }
 
-    new Float:targetX = GANTON_SPAWN_X;
-    new Float:targetY = GANTON_SPAWN_Y;
-    new Float:targetZ = GANTON_SPAWN_Z;
+    new Float:targetX = s_CinematicTargetX[playerid];
+    new Float:targetY = s_CinematicTargetY[playerid];
+    new Float:targetZ = s_CinematicTargetZ[playerid];
 
     InterpolateCameraPos(playerid,
         s_CurrentCameraX[playerid],
@@ -515,9 +525,9 @@ public Cinematic_StartZoomStageTwo(playerid)
         return 0;
     }
 
-    new Float:targetX = GANTON_SPAWN_X;
-    new Float:targetY = GANTON_SPAWN_Y;
-    new Float:targetZ = GANTON_SPAWN_Z;
+    new Float:targetX = s_CinematicTargetX[playerid];
+    new Float:targetY = s_CinematicTargetY[playerid];
+    new Float:targetZ = s_CinematicTargetZ[playerid];
 
     InterpolateCameraPos(playerid,
         s_CurrentCameraX[playerid],
@@ -598,6 +608,11 @@ hook OnPlayerConnect(playerid)
     s_CinematicSpawnActive[playerid] = false;
     s_CinematicSpawnTimer[playerid] = 0;
 
+    s_CinematicTargetX[playerid] = GANTON_SPAWN_X;
+    s_CinematicTargetY[playerid] = GANTON_SPAWN_Y;
+    s_CinematicTargetZ[playerid] = GANTON_SPAWN_Z;
+    s_CinematicTargetA[playerid] = GANTON_SPAWN_A;
+
     s_CinematicFadeTD[playerid] = PlayerText:INVALID_TEXT_DRAW;
     return 1;
 }
@@ -632,12 +647,9 @@ public Cinematic_StartTravelToPlayer(playerid)
     }
     
 
-    new Float:targetX = GANTON_SPAWN_X;
-    new Float:targetY = GANTON_SPAWN_Y;
-    new Float:targetZ = GANTON_SPAWN_Z;
-
-    // Sau này khi spawn theo last position chỉ cần thay
-    // GANTON bằng s_CharacterPosX/Y/Z.
+    new Float:targetX = s_CinematicTargetX[playerid];
+    new Float:targetY = s_CinematicTargetY[playerid];
+    new Float:targetZ = s_CinematicTargetZ[playerid];
 
     new Float:skyX = targetX + CINEMATIC_SKY_RADIUS;
     new Float:skyY = targetY - CINEMATIC_SKY_RADIUS;
@@ -700,6 +712,11 @@ Cinematic_StartNewCharacter(playerid)
     s_CinematicSpawnActive[playerid] = true;
     s_CinematicNewCharacter[playerid] = true;
 
+    s_CinematicTargetX[playerid] = GANTON_SPAWN_X;
+    s_CinematicTargetY[playerid] = GANTON_SPAWN_Y;
+    s_CinematicTargetZ[playerid] = GANTON_SPAWN_Z;
+    s_CinematicTargetA[playerid] = GANTON_SPAWN_A;
+
     // Dang o interior Character Creator.
     // Fade den truoc khi chuyen ra Los Santos.
     Cinematic_FadeOut(playerid, CINEMATIC_ACTION_NEW_CHARACTER);
@@ -720,8 +737,8 @@ Cinematic_SetupNewCharacterSky(playerid)
 
     SetPlayerSkin(playerid, s_CharacterSkin[playerid]);
 
-    SetPlayerPos(playerid, GANTON_SPAWN_X, GANTON_SPAWN_Y, GANTON_SPAWN_Z);
-    SetPlayerFacingAngle(playerid, GANTON_SPAWN_A);
+    SetPlayerPos(playerid, s_CinematicTargetX[playerid], s_CinematicTargetY[playerid], s_CinematicTargetZ[playerid]);
+    SetPlayerFacingAngle(playerid, s_CinematicTargetA[playerid]);
 
     ResetPlayerMoney(playerid);
     GivePlayerMoney(playerid, s_CharacterCash[playerid]);
@@ -806,8 +823,8 @@ Cinematic_CaptureCurrentCamera(playerid)
 }
 Cinematic_PrepareLoginPlayer(playerid)
 {
-    SetPlayerInterior(playerid, 0);
-    SetPlayerVirtualWorld(playerid, 0);
+    SetPlayerInterior(playerid, s_CharacterInterior[playerid]);
+    SetPlayerVirtualWorld(playerid, s_CharacterVirtualWorld[playerid]);
 
     SetPlayerSkin(playerid, s_CharacterSkin[playerid]);
 
@@ -818,13 +835,8 @@ Cinematic_PrepareLoginPlayer(playerid)
     SetPlayerHealth(playerid, s_CharacterHealth[playerid]);
     SetPlayerArmour(playerid, s_CharacterArmour[playerid]);
 
-    SetPlayerPos(playerid,
-        GANTON_SPAWN_X,
-        GANTON_SPAWN_Y,
-        GANTON_SPAWN_Z
-    );
-
-    SetPlayerFacingAngle(playerid, GANTON_SPAWN_A);
+    SetPlayerPos(playerid, s_CinematicTargetX[playerid], s_CinematicTargetY[playerid], s_CinematicTargetZ[playerid]);
+    SetPlayerFacingAngle(playerid, s_CinematicTargetA[playerid]);
 
     TogglePlayerControllable(playerid, false);
 
