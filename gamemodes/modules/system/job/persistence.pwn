@@ -36,7 +36,7 @@ stock Job_LoadProgress(playerid)
         g_DatabaseHandle,
         query,
         sizeof(query),
-        "SELECT `job_type`,`experience`,`completed_runs`,`completed_tasks`,`best_streak`,`total_earnings`,`is_employed`,COALESCE(DATE_FORMAT(`hired_at`,'%%Y-%%m-%%d %%H:%%i:%%s'),'') AS `hired_at`,`daily_salary`,`daily_allowance` FROM `character_jobs` WHERE `character_id`=%d;",
+        "SELECT `job_type`,`experience`,`completed_runs`,`completed_tasks`,`best_streak`,`total_earnings` FROM `character_jobs` WHERE `character_id`=%d;",
         characterID
     );
 
@@ -102,27 +102,7 @@ public OnJobProgressLoaded(playerid, characterID, loadToken)
             "total_earnings",
             s_PlayerJobTotalEarnings[playerid][jobid]
         );
-        cache_get_value_name_bool(
-            row,
-            "is_employed",
-            s_PlayerJobEmployed[playerid][jobid]
-        );
-        cache_get_value_name(
-            row,
-            "hired_at",
-            s_PlayerJobHiredAt[playerid][jobid],
-            MAX_JOB_HIRE_DATE_LENGTH
-        );
-        cache_get_value_name_int(
-            row,
-            "daily_salary",
-            s_PlayerJobDailySalary[playerid][jobid]
-        );
-        cache_get_value_name_int(
-            row,
-            "daily_allowance",
-            s_PlayerJobDailyAllowance[playerid][jobid]
-        );
+
     }
 
     s_PlayerJobProgressLoading[playerid] = false;

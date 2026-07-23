@@ -130,22 +130,12 @@ stock bool:Job_CanStart(playerid, jobid, bool:sendError = true)
         return false;
     }
 
-    if (!Job_IsProgressReady(playerid))
+    // Progress/XP is secondary data and must never block the player from
+    // starting the job. Load it quietly in the background when necessary.
+    if (!Job_IsProgressReady(playerid) &&
+        !s_PlayerJobProgressLoading[playerid])
     {
-        if (!s_PlayerJobProgressLoading[playerid])
-        {
-            Job_LoadProgress(playerid);
-        }
-
-        if (sendError)
-        {
-            SendClientMessage(
-                playerid,
-                COLOR_RED,
-                "Du lieu nghe nghiep dang duoc tai. Hay thu lai sau giay lat."
-            );
-        }
-        return false;
+        Job_LoadProgress(playerid);
     }
 
     if (s_PlayerActiveJob[playerid] != JOB_NONE)
@@ -257,9 +247,17 @@ stock Job_RecordTask(
 {
     new const jobid = s_PlayerActiveJob[playerid];
 
-    if (!Job_IsValid(jobid) || !Job_IsProgressReady(playerid))
+    if (!Job_IsValid(jobid))
     {
         return 0;
+    }
+
+    // Gameplay/reward is not allowed to fail just because XP history is
+    // still loading. Pay the completed delivery and skip only progression.
+    if (!Job_IsProgressReady(playerid))
+    {
+        Job_GivePay(playerid, reward);
+        return 1;
     }
 
     if (streakEligible)
@@ -291,9 +289,17 @@ stock Job_CompleteRun(playerid, reward, experience)
 {
     new const jobid = s_PlayerActiveJob[playerid];
 
-    if (!Job_IsValid(jobid) || !Job_IsProgressReady(playerid))
+    if (!Job_IsValid(jobid))
     {
         return 0;
+    }
+
+    // Shift completion/reward must remain functional even while historical
+    // progression is unavailable.
+    if (!Job_IsProgressReady(playerid))
+    {
+        Job_GivePay(playerid, reward);
+        return 1;
     }
 
     s_PlayerJobCompletedRuns[playerid][jobid]++;

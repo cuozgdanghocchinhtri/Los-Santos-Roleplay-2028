@@ -50,6 +50,15 @@ public OnPizzaCharacterJobLoaded(playerid, characterID)
     }
 
     pJobLoaded[playerid] = true;
+
+    // pJob decides employment immediately. Progress/history loads separately
+    // and never blocks renting a Pizzaboy.
+    if (!Job_IsProgressReady(playerid) &&
+        !s_PlayerJobProgressLoading[playerid])
+    {
+        Job_LoadProgress(playerid);
+    }
+
     return 1;
 }
 
