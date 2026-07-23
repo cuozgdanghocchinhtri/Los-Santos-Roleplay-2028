@@ -23,12 +23,19 @@
 
 #define CREATOR_SKINS_PER_GROUP      (6)
 
-#define CREATOR_COLOR_WHITE          (0xFFFFFFFF)
-#define CREATOR_COLOR_GREY           (0xB8B8B8CC)
-#define CREATOR_COLOR_RED            (0xE33131FF)
-#define CREATOR_COLOR_PANEL          (0x000000A0)
-#define CREATOR_COLOR_BUTTON         (0x151515DD)
-#define CREATOR_COLOR_HOVER          (0xE33131FF)
+#define CREATOR_COLOR_WHITE          (0xE8EFEAFF)
+#define CREATOR_COLOR_LIGHT          (0xF3F7F4FF)
+#define CREATOR_COLOR_GREY           (0x8E9D95FF)
+#define CREATOR_COLOR_GREEN          (0x39A06BFF)
+#define CREATOR_COLOR_BORDER         (0x0B3D27FF)
+#define CREATOR_COLOR_PANEL          (0x080C0AFF)
+#define CREATOR_COLOR_HEADER         (0x0D120FFF)
+#define CREATOR_COLOR_CONTENT        (0x111713FF)
+#define CREATOR_COLOR_ROW            (0x1B231EFF)
+#define CREATOR_COLOR_ROW_ALT        (0x202A24FF)
+#define CREATOR_COLOR_BUTTON         (0x0B4A2EFF)
+#define CREATOR_COLOR_ACCENT         (0x1B7048FF)
+#define CREATOR_COLOR_HOVER          (0x25875AFF)
 
 //-----------------------------------------------------------------------------
 // Skin groups
@@ -89,6 +96,23 @@ new const g_FemaleVoiceNames[][] =
 enum
 {
     CreatorTD_Panel,
+    CreatorTD_Surface,
+    CreatorTD_Header,
+    CreatorTD_Accent,
+    CreatorTD_ContentPanel,
+    CreatorTD_NamePanel,
+
+    CreatorTD_GenderRow,
+    CreatorTD_DayRow,
+    CreatorTD_MonthRow,
+    CreatorTD_YearRow,
+    CreatorTD_ToneRow,
+    CreatorTD_SkinRow,
+    CreatorTD_VoiceRow,
+    CreatorTD_HeightRow,
+    CreatorTD_WeightRow,
+    CreatorTD_BirthPlaceRow,
+
     CreatorTD_Title,
     CreatorTD_Subtitle,
     CreatorTD_Name,
@@ -367,12 +391,54 @@ stock PlayerText:Creator_CreateText(
 
 stock PlayerText:Creator_CreateArrow(playerid, Float:x, Float:y, const text[])
 {
-    new PlayerText:td = Creator_CreateText(playerid, x, y, text, CREATOR_COLOR_WHITE, 0.22, 1.0);
+    new PlayerText:td = Creator_CreateText(playerid, x, y, text, CREATOR_COLOR_LIGHT, 0.20, 0.95);
 
     // Giảm vùng selectable để không chồng chéo
-    PlayerTextDrawTextSize(playerid, td, x + 10.0, y + 10.0);
+    PlayerTextDrawAlignment(playerid, td, TEXT_DRAW_ALIGN_CENTER);
+    PlayerTextDrawUseBox(playerid, td, true);
+    PlayerTextDrawBoxColor(playerid, td, CREATOR_COLOR_BUTTON);
+    PlayerTextDrawTextSize(playerid, td, 12.0, 22.0);
     PlayerTextDrawSetSelectable(playerid, td, true);
 
+    return td;
+}
+
+stock PlayerText:Creator_CreateBox(
+    playerid,
+    Float:left,
+    Float:top,
+    Float:right,
+    Float:height,
+    color)
+{
+    new PlayerText:td = CreatePlayerTextDraw(playerid, left, top, "_");
+
+    PlayerTextDrawLetterSize(playerid, td, 0.0, height);
+    PlayerTextDrawTextSize(playerid, td, right, 0.0);
+    PlayerTextDrawUseBox(playerid, td, true);
+    PlayerTextDrawBoxColor(playerid, td, color);
+
+    return td;
+}
+
+stock PlayerText:Creator_CreateValue(
+    playerid,
+    Float:x,
+    Float:y,
+    const text[],
+    Float:sizeX = 0.19)
+{
+    new PlayerText:td = Creator_CreateText(
+        playerid,
+        x,
+        y,
+        text,
+        CREATOR_COLOR_GREEN,
+        sizeX,
+        0.95
+    );
+
+    PlayerTextDrawAlignment(playerid, td, TEXT_DRAW_ALIGN_CENTER);
     return td;
 }
 Creator_CreateUI(playerid)
@@ -385,31 +451,106 @@ Creator_CreateUI(playerid)
     // =========================================================
     // PANEL NHO GON HON
     // =========================================================
-    s_CreatorTD[playerid][CreatorTD_Panel] = CreatePlayerTextDraw(playerid, 414.0, 26.0, "_");
-    PlayerTextDrawLetterSize(playerid, s_CreatorTD[playerid][CreatorTD_Panel], 0.0, 37.0);
-    PlayerTextDrawTextSize(playerid, s_CreatorTD[playerid][CreatorTD_Panel], 620.0, 0.0);
-    PlayerTextDrawUseBox(playerid, s_CreatorTD[playerid][CreatorTD_Panel], true);
-    PlayerTextDrawBoxColor(playerid, s_CreatorTD[playerid][CreatorTD_Panel], CREATOR_COLOR_PANEL);
+    s_CreatorTD[playerid][CreatorTD_Panel] = Creator_CreateBox(
+        playerid,
+        386.0,
+        25.0,
+        628.0,
+        40.8,
+        CREATOR_COLOR_BORDER
+    );
+
+    s_CreatorTD[playerid][CreatorTD_Surface] = Creator_CreateBox(
+        playerid,
+        390.0,
+        29.0,
+        624.0,
+        40.0,
+        CREATOR_COLOR_PANEL
+    );
+
+    s_CreatorTD[playerid][CreatorTD_Header] = Creator_CreateBox(
+        playerid,
+        390.0,
+        29.0,
+        624.0,
+        5.8,
+        CREATOR_COLOR_HEADER
+    );
+
+    s_CreatorTD[playerid][CreatorTD_Accent] = Creator_CreateBox(
+        playerid,
+        390.0,
+        84.0,
+        624.0,
+        0.45,
+        CREATOR_COLOR_ACCENT
+    );
+
+    s_CreatorTD[playerid][CreatorTD_ContentPanel] = Creator_CreateBox(
+        playerid,
+        390.0,
+        89.0,
+        624.0,
+        33.5,
+        CREATOR_COLOR_CONTENT
+    );
+
+    s_CreatorTD[playerid][CreatorTD_NamePanel] = Creator_CreateBox(
+        playerid,
+        403.0,
+        95.0,
+        611.0,
+        2.5,
+        CREATOR_COLOR_ROW_ALT
+    );
+
+    new const Float:rowTop[10] =
+    {
+        121.0, 144.0, 167.0, 190.0, 213.0,
+        236.0, 259.0, 282.0, 305.0, 328.0
+    };
+
+    s_CreatorTD[playerid][CreatorTD_GenderRow] =
+        Creator_CreateBox(playerid, 403.0, rowTop[0], 611.0, 2.15, CREATOR_COLOR_ROW);
+    s_CreatorTD[playerid][CreatorTD_DayRow] =
+        Creator_CreateBox(playerid, 403.0, rowTop[1], 611.0, 2.15, CREATOR_COLOR_ROW_ALT);
+    s_CreatorTD[playerid][CreatorTD_MonthRow] =
+        Creator_CreateBox(playerid, 403.0, rowTop[2], 611.0, 2.15, CREATOR_COLOR_ROW);
+    s_CreatorTD[playerid][CreatorTD_YearRow] =
+        Creator_CreateBox(playerid, 403.0, rowTop[3], 611.0, 2.15, CREATOR_COLOR_ROW_ALT);
+    s_CreatorTD[playerid][CreatorTD_ToneRow] =
+        Creator_CreateBox(playerid, 403.0, rowTop[4], 611.0, 2.15, CREATOR_COLOR_ROW);
+    s_CreatorTD[playerid][CreatorTD_SkinRow] =
+        Creator_CreateBox(playerid, 403.0, rowTop[5], 611.0, 2.15, CREATOR_COLOR_ROW_ALT);
+    s_CreatorTD[playerid][CreatorTD_VoiceRow] =
+        Creator_CreateBox(playerid, 403.0, rowTop[6], 611.0, 2.15, CREATOR_COLOR_ROW);
+    s_CreatorTD[playerid][CreatorTD_HeightRow] =
+        Creator_CreateBox(playerid, 403.0, rowTop[7], 611.0, 2.15, CREATOR_COLOR_ROW_ALT);
+    s_CreatorTD[playerid][CreatorTD_WeightRow] =
+        Creator_CreateBox(playerid, 403.0, rowTop[8], 611.0, 2.15, CREATOR_COLOR_ROW);
+    s_CreatorTD[playerid][CreatorTD_BirthPlaceRow] =
+        Creator_CreateBox(playerid, 403.0, rowTop[9], 611.0, 2.15, CREATOR_COLOR_ROW_ALT);
 
     // =========================================================
     // HEADER
     // =========================================================
 
     // Logo
-    s_CreatorTD[playerid][CreatorTD_Title] = Creator_CreateText(playerid, 517.0, 43.0, "LOS SANTOS ROLEPLAY", CREATOR_COLOR_RED, 0.31, 1.38);
+    s_CreatorTD[playerid][CreatorTD_Title] = Creator_CreateText(playerid, 507.0, 43.0, "LOS SANTOS ROLEPLAY", CREATOR_COLOR_LIGHT, 0.30, 1.30);
     PlayerTextDrawFont(playerid, s_CreatorTD[playerid][CreatorTD_Title], TEXT_DRAW_FONT_3);
     PlayerTextDrawAlignment(playerid, s_CreatorTD[playerid][CreatorTD_Title], TEXT_DRAW_ALIGN_CENTER);
     PlayerTextDrawBackgroundColor(playerid, s_CreatorTD[playerid][CreatorTD_Title], 0x000000FF);
     PlayerTextDrawSetOutline(playerid, s_CreatorTD[playerid][CreatorTD_Title], 2);
 
     // Khởi tạo nhân vật - sát hơn
-    s_CreatorTD[playerid][CreatorTD_Subtitle] = Creator_CreateText(playerid, 517.0, 63.0, "khoi tao nhan vat", CREATOR_COLOR_WHITE, 0.24, 1.15);
+    s_CreatorTD[playerid][CreatorTD_Subtitle] = Creator_CreateText(playerid, 507.0, 63.0, "CREATE CHARACTER", CREATOR_COLOR_ACCENT, 0.20, 0.95);
     PlayerTextDrawFont(playerid, s_CreatorTD[playerid][CreatorTD_Subtitle], TEXT_DRAW_FONT_3);
     PlayerTextDrawAlignment(playerid, s_CreatorTD[playerid][CreatorTD_Subtitle], TEXT_DRAW_ALIGN_CENTER);
     PlayerTextDrawSetOutline(playerid, s_CreatorTD[playerid][CreatorTD_Subtitle], 1);
 
     // Tên nhân vật - sát hơn
-    s_CreatorTD[playerid][CreatorTD_Name] = Creator_CreateText(playerid, 517.0, 82.0, "Nhan vat: Test Character", CREATOR_COLOR_GREY, 0.19, 0.95);
+    s_CreatorTD[playerid][CreatorTD_Name] = Creator_CreateText(playerid, 507.0, 99.0, "Nhan vat: Test Character", CREATOR_COLOR_WHITE, 0.19, 0.90);
     PlayerTextDrawAlignment(playerid, s_CreatorTD[playerid][CreatorTD_Name], TEXT_DRAW_ALIGN_CENTER);
 
     // =========================================================
@@ -417,66 +558,66 @@ Creator_CreateUI(playerid)
     // =========================================================
 
     // Bắt đầu từ y = 117, mỗi dòng cách nhau 22
-    s_CreatorTD[playerid][CreatorTD_GenderLabel]      = Creator_CreateText(playerid, 435.0, 117.0, "Gioi tinh:",   CREATOR_COLOR_WHITE, 0.21, 1.00);
-    s_CreatorTD[playerid][CreatorTD_GenderLeft]       = Creator_CreateArrow(playerid, 538.0, 116.0, "<");
-    s_CreatorTD[playerid][CreatorTD_GenderValue]      = Creator_CreateText(playerid, 560.0, 117.0, "~g~Nam",       CREATOR_COLOR_WHITE, 0.20, 1.00);
-    s_CreatorTD[playerid][CreatorTD_GenderRight]      = Creator_CreateArrow(playerid, 596.0, 116.0, ">");
+    s_CreatorTD[playerid][CreatorTD_GenderLabel]      = Creator_CreateText(playerid, 413.0, 126.0, "Gioi tinh:",   CREATOR_COLOR_WHITE, 0.19, 0.90);
+    s_CreatorTD[playerid][CreatorTD_GenderLeft]       = Creator_CreateArrow(playerid, 535.0, 125.0, "<");
+    s_CreatorTD[playerid][CreatorTD_GenderValue]      = Creator_CreateValue(playerid, 568.0, 126.0, "Nam");
+    s_CreatorTD[playerid][CreatorTD_GenderRight]      = Creator_CreateArrow(playerid, 601.0, 125.0, ">");
 
-    s_CreatorTD[playerid][CreatorTD_DayLabel]         = Creator_CreateText(playerid, 435.0, 139.0, "Ngay sinh:",   CREATOR_COLOR_WHITE, 0.21, 1.00);
-    s_CreatorTD[playerid][CreatorTD_DayLeft]          = Creator_CreateArrow(playerid, 538.0, 138.0, "<");
-    s_CreatorTD[playerid][CreatorTD_DayValue]         = Creator_CreateText(playerid, 560.0, 139.0, "~g~01",        CREATOR_COLOR_WHITE, 0.20, 1.00);
-    s_CreatorTD[playerid][CreatorTD_DayRight]         = Creator_CreateArrow(playerid, 596.0, 138.0, ">");
+    s_CreatorTD[playerid][CreatorTD_DayLabel]         = Creator_CreateText(playerid, 413.0, 149.0, "Ngay sinh:",   CREATOR_COLOR_WHITE, 0.19, 0.90);
+    s_CreatorTD[playerid][CreatorTD_DayLeft]          = Creator_CreateArrow(playerid, 535.0, 148.0, "<");
+    s_CreatorTD[playerid][CreatorTD_DayValue]         = Creator_CreateValue(playerid, 568.0, 149.0, "01");
+    s_CreatorTD[playerid][CreatorTD_DayRight]         = Creator_CreateArrow(playerid, 601.0, 148.0, ">");
 
-    s_CreatorTD[playerid][CreatorTD_MonthLabel]       = Creator_CreateText(playerid, 435.0, 161.0, "Thang sinh:",  CREATOR_COLOR_WHITE, 0.21, 1.00);
-    s_CreatorTD[playerid][CreatorTD_MonthLeft]        = Creator_CreateArrow(playerid, 538.0, 160.0, "<");
-    s_CreatorTD[playerid][CreatorTD_MonthValue]       = Creator_CreateText(playerid, 560.0, 161.0, "~g~01",        CREATOR_COLOR_WHITE, 0.20, 1.00);
-    s_CreatorTD[playerid][CreatorTD_MonthRight]       = Creator_CreateArrow(playerid, 596.0, 160.0, ">");
+    s_CreatorTD[playerid][CreatorTD_MonthLabel]       = Creator_CreateText(playerid, 413.0, 172.0, "Thang sinh:",  CREATOR_COLOR_WHITE, 0.19, 0.90);
+    s_CreatorTD[playerid][CreatorTD_MonthLeft]        = Creator_CreateArrow(playerid, 535.0, 171.0, "<");
+    s_CreatorTD[playerid][CreatorTD_MonthValue]       = Creator_CreateValue(playerid, 568.0, 172.0, "01");
+    s_CreatorTD[playerid][CreatorTD_MonthRight]       = Creator_CreateArrow(playerid, 601.0, 171.0, ">");
 
-    s_CreatorTD[playerid][CreatorTD_YearLabel]        = Creator_CreateText(playerid, 435.0, 183.0, "Nam sinh:",    CREATOR_COLOR_WHITE, 0.21, 1.00);
-    s_CreatorTD[playerid][CreatorTD_YearLeft]         = Creator_CreateArrow(playerid, 538.0, 182.0, "<");
-    s_CreatorTD[playerid][CreatorTD_YearValue]        = Creator_CreateText(playerid, 560.0, 183.0, "~g~1964 (28 tuoi)", CREATOR_COLOR_WHITE, 0.18, 1.00);
-    s_CreatorTD[playerid][CreatorTD_YearRight]        = Creator_CreateArrow(playerid, 596.0, 182.0, ">");
+    s_CreatorTD[playerid][CreatorTD_YearLabel]        = Creator_CreateText(playerid, 413.0, 195.0, "Nam sinh:",    CREATOR_COLOR_WHITE, 0.19, 0.90);
+    s_CreatorTD[playerid][CreatorTD_YearLeft]         = Creator_CreateArrow(playerid, 535.0, 194.0, "<");
+    s_CreatorTD[playerid][CreatorTD_YearValue]        = Creator_CreateValue(playerid, 568.0, 195.0, "1964 (28 tuoi)", 0.16);
+    s_CreatorTD[playerid][CreatorTD_YearRight]        = Creator_CreateArrow(playerid, 601.0, 194.0, ">");
 
-    s_CreatorTD[playerid][CreatorTD_ToneLabel]        = Creator_CreateText(playerid, 435.0, 205.0, "Mau da:",      CREATOR_COLOR_WHITE, 0.21, 1.00);
-    s_CreatorTD[playerid][CreatorTD_ToneLeft]         = Creator_CreateArrow(playerid, 538.0, 204.0, "<");
-    s_CreatorTD[playerid][CreatorTD_ToneValue]        = Creator_CreateText(playerid, 560.0, 205.0, "~g~Toi",       CREATOR_COLOR_WHITE, 0.20, 1.00);
-    s_CreatorTD[playerid][CreatorTD_ToneRight]        = Creator_CreateArrow(playerid, 596.0, 204.0, ">");
+    s_CreatorTD[playerid][CreatorTD_ToneLabel]        = Creator_CreateText(playerid, 413.0, 218.0, "Mau da:",      CREATOR_COLOR_WHITE, 0.19, 0.90);
+    s_CreatorTD[playerid][CreatorTD_ToneLeft]         = Creator_CreateArrow(playerid, 535.0, 217.0, "<");
+    s_CreatorTD[playerid][CreatorTD_ToneValue]        = Creator_CreateValue(playerid, 568.0, 218.0, "Toi");
+    s_CreatorTD[playerid][CreatorTD_ToneRight]        = Creator_CreateArrow(playerid, 601.0, 217.0, ">");
 
-    s_CreatorTD[playerid][CreatorTD_SkinLabel]        = Creator_CreateText(playerid, 435.0, 227.0, "Ngoai hinh:",  CREATOR_COLOR_WHITE, 0.21, 1.00);
-    s_CreatorTD[playerid][CreatorTD_SkinLeft]         = Creator_CreateArrow(playerid, 538.0, 226.0, "<");
-    s_CreatorTD[playerid][CreatorTD_SkinValue]        = Creator_CreateText(playerid, 560.0, 227.0, "~g~26 (1/6)",  CREATOR_COLOR_WHITE, 0.18, 1.00);
-    s_CreatorTD[playerid][CreatorTD_SkinRight]        = Creator_CreateArrow(playerid, 596.0, 226.0, ">");
+    s_CreatorTD[playerid][CreatorTD_SkinLabel]        = Creator_CreateText(playerid, 413.0, 241.0, "Ngoai hinh:",  CREATOR_COLOR_WHITE, 0.19, 0.90);
+    s_CreatorTD[playerid][CreatorTD_SkinLeft]         = Creator_CreateArrow(playerid, 535.0, 240.0, "<");
+    s_CreatorTD[playerid][CreatorTD_SkinValue]        = Creator_CreateValue(playerid, 568.0, 241.0, "26 (1/6)", 0.17);
+    s_CreatorTD[playerid][CreatorTD_SkinRight]        = Creator_CreateArrow(playerid, 601.0, 240.0, ">");
 
-    s_CreatorTD[playerid][CreatorTD_VoiceLabel]       = Creator_CreateText(playerid, 435.0, 249.0, "Giong noi:",   CREATOR_COLOR_WHITE, 0.21, 1.00);
-    s_CreatorTD[playerid][CreatorTD_VoiceLeft]        = Creator_CreateArrow(playerid, 538.0, 248.0, "<");
-    s_CreatorTD[playerid][CreatorTD_VoiceValue]       = Creator_CreateText(playerid, 560.0, 249.0, "~g~Tram",      CREATOR_COLOR_WHITE, 0.20, 1.00);
-    s_CreatorTD[playerid][CreatorTD_VoiceRight]       = Creator_CreateArrow(playerid, 596.0, 248.0, ">");
+    s_CreatorTD[playerid][CreatorTD_VoiceLabel]       = Creator_CreateText(playerid, 413.0, 264.0, "Giong noi:",   CREATOR_COLOR_WHITE, 0.19, 0.90);
+    s_CreatorTD[playerid][CreatorTD_VoiceLeft]        = Creator_CreateArrow(playerid, 535.0, 263.0, "<");
+    s_CreatorTD[playerid][CreatorTD_VoiceValue]       = Creator_CreateValue(playerid, 568.0, 264.0, "Tram");
+    s_CreatorTD[playerid][CreatorTD_VoiceRight]       = Creator_CreateArrow(playerid, 601.0, 263.0, ">");
 
-    s_CreatorTD[playerid][CreatorTD_HeightLabel]      = Creator_CreateText(playerid, 435.0, 271.0, "Chieu cao:",   CREATOR_COLOR_WHITE, 0.21, 1.00);
-    s_CreatorTD[playerid][CreatorTD_HeightLeft]       = Creator_CreateArrow(playerid, 538.0, 270.0, "<");
-    s_CreatorTD[playerid][CreatorTD_HeightValue]      = Creator_CreateText(playerid, 560.0, 271.0, "~g~175 cm",    CREATOR_COLOR_WHITE, 0.20, 1.00);
-    s_CreatorTD[playerid][CreatorTD_HeightRight]      = Creator_CreateArrow(playerid, 596.0, 270.0, ">");
+    s_CreatorTD[playerid][CreatorTD_HeightLabel]      = Creator_CreateText(playerid, 413.0, 287.0, "Chieu cao:",   CREATOR_COLOR_WHITE, 0.19, 0.90);
+    s_CreatorTD[playerid][CreatorTD_HeightLeft]       = Creator_CreateArrow(playerid, 535.0, 286.0, "<");
+    s_CreatorTD[playerid][CreatorTD_HeightValue]      = Creator_CreateValue(playerid, 568.0, 287.0, "175 cm");
+    s_CreatorTD[playerid][CreatorTD_HeightRight]      = Creator_CreateArrow(playerid, 601.0, 286.0, ">");
 
-    s_CreatorTD[playerid][CreatorTD_WeightLabel]      = Creator_CreateText(playerid, 435.0, 293.0, "Can nang:",    CREATOR_COLOR_WHITE, 0.21, 1.00);
-    s_CreatorTD[playerid][CreatorTD_WeightLeft]       = Creator_CreateArrow(playerid, 538.0, 292.0, "<");
-    s_CreatorTD[playerid][CreatorTD_WeightValue]      = Creator_CreateText(playerid, 560.0, 293.0, "~g~70 kg",     CREATOR_COLOR_WHITE, 0.20, 1.00);
-    s_CreatorTD[playerid][CreatorTD_WeightRight]      = Creator_CreateArrow(playerid, 596.0, 292.0, ">");
+    s_CreatorTD[playerid][CreatorTD_WeightLabel]      = Creator_CreateText(playerid, 413.0, 310.0, "Can nang:",    CREATOR_COLOR_WHITE, 0.19, 0.90);
+    s_CreatorTD[playerid][CreatorTD_WeightLeft]       = Creator_CreateArrow(playerid, 535.0, 309.0, "<");
+    s_CreatorTD[playerid][CreatorTD_WeightValue]      = Creator_CreateValue(playerid, 568.0, 310.0, "70 kg");
+    s_CreatorTD[playerid][CreatorTD_WeightRight]      = Creator_CreateArrow(playerid, 601.0, 309.0, ">");
 
-    s_CreatorTD[playerid][CreatorTD_BirthPlaceLabel]  = Creator_CreateText(playerid, 435.0, 315.0, "Noi sinh:",    CREATOR_COLOR_WHITE, 0.21, 1.00);
-    s_CreatorTD[playerid][CreatorTD_BirthPlaceLeft]   = Creator_CreateArrow(playerid, 538.0, 314.0, "<");
-    s_CreatorTD[playerid][CreatorTD_BirthPlaceValue]  = Creator_CreateText(playerid, 560.0, 315.0, "~g~Los Santos", CREATOR_COLOR_WHITE, 0.18, 1.00);
-    s_CreatorTD[playerid][CreatorTD_BirthPlaceRight]  = Creator_CreateArrow(playerid, 596.0, 314.0, ">");
+    s_CreatorTD[playerid][CreatorTD_BirthPlaceLabel]  = Creator_CreateText(playerid, 413.0, 333.0, "Noi sinh:",    CREATOR_COLOR_WHITE, 0.19, 0.90);
+    s_CreatorTD[playerid][CreatorTD_BirthPlaceLeft]   = Creator_CreateArrow(playerid, 535.0, 332.0, "<");
+    s_CreatorTD[playerid][CreatorTD_BirthPlaceValue]  = Creator_CreateValue(playerid, 568.0, 333.0, "Los Santos", 0.17);
+    s_CreatorTD[playerid][CreatorTD_BirthPlaceRight]  = Creator_CreateArrow(playerid, 601.0, 332.0, ">");
 
     // Credit nho hon
-    s_CreatorTD[playerid][CreatorTD_Hint] = Creator_CreateText(playerid, 517.0, 344.0, "Developer by CHATGPT & Cuozg(ideas)", CREATOR_COLOR_GREY, 0.13, 0.70);
+    s_CreatorTD[playerid][CreatorTD_Hint] = Creator_CreateText(playerid, 507.0, 349.0, "USE ARROWS TO EDIT YOUR PROFILE", CREATOR_COLOR_GREY, 0.13, 0.70);
     PlayerTextDrawAlignment(playerid, s_CreatorTD[playerid][CreatorTD_Hint], TEXT_DRAW_ALIGN_CENTER);
 
     // Nút xác nhận nhỏ gọn hơn
-    s_CreatorTD[playerid][CreatorTD_Confirm] = Creator_CreateText(playerid, 517.0, 368.0, "~g~XAC NHAN NHAN VAT", CREATOR_COLOR_WHITE, 0.24, 1.10);
+    s_CreatorTD[playerid][CreatorTD_Confirm] = Creator_CreateText(playerid, 507.0, 372.0, "XAC NHAN NHAN VAT", CREATOR_COLOR_LIGHT, 0.22, 1.05);
     PlayerTextDrawAlignment(playerid, s_CreatorTD[playerid][CreatorTD_Confirm], TEXT_DRAW_ALIGN_CENTER);
     PlayerTextDrawUseBox(playerid, s_CreatorTD[playerid][CreatorTD_Confirm], true);
-    PlayerTextDrawBoxColor(playerid, s_CreatorTD[playerid][CreatorTD_Confirm], CREATOR_COLOR_BUTTON);
-    PlayerTextDrawTextSize(playerid, s_CreatorTD[playerid][CreatorTD_Confirm], 16.0, 170.0);
+    PlayerTextDrawBoxColor(playerid, s_CreatorTD[playerid][CreatorTD_Confirm], CREATOR_COLOR_ACCENT);
+    PlayerTextDrawTextSize(playerid, s_CreatorTD[playerid][CreatorTD_Confirm], 12.0, 205.0);
     PlayerTextDrawSetSelectable(playerid, s_CreatorTD[playerid][CreatorTD_Confirm], true);
 
     s_CreatorUIReady[playerid] = true;

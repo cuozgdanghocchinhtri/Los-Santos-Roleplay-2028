@@ -141,7 +141,7 @@ hook OnPlayerRegister(playerid)
     new const accountID = cache_insert_id();
     if (accountID == INVALID_ACCOUNT_ID)
     {
-        SendClientMessage(playerid, COLOR_RED, "Account creation failed. Please reconnect and try again.");
+        SendClientMessage(playerid, COLOR_RED, "Tao tai khoan that bai. Hay ket noi lai va thu lai.");
         Kick(playerid);
         return 1;
     }
@@ -165,7 +165,7 @@ hook OnPasswordCheck(playerid, bool:match)
     {
         if (IsAccountAlreadyOnline(playerid, GetPlayerAccountID(playerid)))
         {
-            SendClientMessage(playerid, COLOR_RED, "This LS:RP account is already logged in.");
+            SendClientMessage(playerid, COLOR_RED, "Tai khoan LS:RP nay dang duoc dang nhap.");
             DeletePVar(playerid, "tempPassword");
             Kick(playerid);
             return 1;
@@ -182,7 +182,7 @@ hook OnPasswordCheck(playerid, bool:match)
 
     if (s_PlayerLoginAttempts[playerid] >= MAX_LOGIN_ATTEMPTS)
     {
-        SendClientMessage(playerid, COLOR_RED, "You've been kicked due to too many failed login attempts.");
+        SendClientMessage(playerid, COLOR_RED, "Ban da bi ngat ket noi do nhap sai mat khau qua nhieu lan.");
         Kick(playerid);
         return 1;
     }
@@ -190,7 +190,9 @@ hook OnPasswordCheck(playerid, bool:match)
     Account_ShowLoginDialog(playerid);
 
     new const attemptsLeft = MAX_LOGIN_ATTEMPTS - s_PlayerLoginAttempts[playerid];
-    SendClientMessage(playerid, COLOR_RED, "Wrong password. You still have %d %s left.", attemptsLeft, attemptsLeft == 1 ? "attempt" : "attempts");
+    new message[96];
+    format(message, sizeof(message), "Sai mat khau. Ban con %d lan thu.", attemptsLeft);
+    SendClientMessage(playerid, COLOR_RED, message);
     return 1;
 }
 

@@ -39,15 +39,15 @@ Account_ShowUsernameDialog(playerid, bool:invalid = false)
         playerid,
         DIALOG_ACCOUNT_USERNAME,
         DIALOG_STYLE_INPUT,
-        "LS:RP Account",
-        "Enter your account username below.\n\nThis is your OOC master account, not your character name.",
-        "Continue",
-        "Quit"
+        "LS:RP - Tai khoan",
+        "Nhap ten tai khoan OOC cua ban.\n\nDay la tai khoan chinh, khong phai ten nhan vat.",
+        "Tiep tuc",
+        "Thoat"
     );
 
     if (invalid)
     {
-        SendClientMessage(playerid, COLOR_RED, "Account usernames must be 3-24 characters and use only letters, numbers or underscore.");
+        SendClientMessage(playerid, COLOR_RED, "Ten tai khoan phai co 3-24 ky tu, chi gom chu cai, chu so hoac dau gach duoi.");
     }
     return 1;
 }
@@ -103,16 +103,16 @@ Account_ShowRegistrationDialog(playerid, bool:badpass = false)
         playerid,
         DIALOG_REGISTRATION,
         DIALOG_STYLE_PASSWORD,
-        "Create LS:RP Account",
-        "Create a password for this account.\n\nThe password must be at least %d characters:",
-        "Register",
-        "Back",
+        "LS:RP - Dang ky tai khoan",
+        "Tao mat khau cho tai khoan.\n\nMat khau phai co it nhat %d ky tu:",
+        "Dang ky",
+        "Quay lai",
         ACCOUNT_MIN_PASSWORD_LENGTH
     );
 
     if (badpass)
     {
-        SendClientMessage(playerid, COLOR_RED, "Your password is too short. Please choose a stronger password.");
+        SendClientMessage(playerid, COLOR_RED, "Mat khau qua ngan. Hay chon mat khau manh hon.");
     }
     return 1;
 }
@@ -122,16 +122,16 @@ Account_ShowLoginDialog(playerid)
 {
     new username[ACCOUNT_USERNAME_LENGTH], caption[64];
     GetPlayerAccountUsername(playerid, username, sizeof(username));
-    format(caption, sizeof(caption), "Login - %s", username);
+    format(caption, sizeof(caption), "Dang nhap - %s", username);
 
     ShowPlayerDialog(
         playerid,
         DIALOG_LOGIN,
         DIALOG_STYLE_PASSWORD,
         caption,
-        "Enter the password for your LS:RP account.",
-        "Login",
-        "Back"
+        "Nhap mat khau cua tai khoan LS:RP.",
+        "Dang nhap",
+        "Quay lai"
     );
     return 1;
 }

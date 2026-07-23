@@ -57,6 +57,7 @@
 
 // YSI
 #include <YSI_Coding\y_hooks>
+#include <zcmd>
 
 //-----------------------------------------------------------------------------
 // Script Modules
@@ -65,17 +66,42 @@
 // Definitions and Utilities
 #include "modules/utils/colors.pwn"
 #include "modules/utils/dialogs.pwn"
+#include "modules/utils/shownotifytext.pwn"
 
 // Server
 #include "modules/core/server/database.pwn"
+#include "modules/core/server/settings.pwn"
 
 // Player Account + Characters
 #include "modules/core/player/account/utils.pwn"
 
 #include "modules/core/player/character/utils.pwn"
+#include "modules/system/admin/data.pwn"
+#include "modules/core/player/chat.pwn"
 #include "modules/core/player/character/cinematic.pwn"
 #include "modules/core/player/character/creator.pwn"
+#include "modules/core/player/stats.pwn"
 #include "modules/core/player/character/selector.pwn"
 #include "modules/core/player/character/core.pwn"
 
 #include "modules/core/player/account/core.pwn"
+
+#include "modules/system/job/data.pwn"
+#include "modules/system/job/persistence.pwn"
+#include "modules/system/job/core.pwn"
+#include "modules/system/job/commands.pwn"
+
+#include "modules/system/admin/persistence.pwn"
+#include "modules/system/admin/commands.pwn"
+#include "modules/system/help/commands.pwn"
+
+// Character-owned vehicles.
+//
+// The previous vehicle implementation is kept in
+// modules/system/vehicles/ as a legacy reference, but is not included here.
+// Start with the small load/list flow and add features one at a time.
+#include "modules/system/vehicles/simple.pwn"
+#include "modules/system/vehicles/controls.pwn"
+
+// This fallback must remain after every command module.
+#include "modules/system/help/unknown.pwn"

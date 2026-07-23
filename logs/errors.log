@@ -1,0 +1,1 @@
+[7/23/2026 8:42:16 PM] [plugins/mysql] error #1054 while executing query "SELECT `job_type`,`experience`,`completed_runs`,`completed_tasks`,`best_streak`,`total_earnings`,`is_employed`,COALESCE(DATE_FORMAT(`hired_at`,'%Y-%m-%d %H:%i:%s'),'') AS `hired_at`,`daily_salary`,`daily_allowance` FROM `character_jobs` WHERE `character_id`=1;": Unknown column 'is_employed' in 'field list'

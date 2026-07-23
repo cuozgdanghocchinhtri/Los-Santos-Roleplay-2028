@@ -4,25 +4,38 @@
 // LS:RP Character Selector
 //-----------------------------------------------------------------------------
 
-#define SELECTOR_PANEL               (0x000000B0)
-#define SELECTOR_PANEL_LIGHT         (0x151515D0)
+#define SELECTOR_BORDER              (0x0B3D27FF)
+#define SELECTOR_PANEL               (0x080C0AFF)
+#define SELECTOR_HEADER              (0x0D120FFF)
+#define SELECTOR_CARD                (0x1B231EFF)
+#define SELECTOR_CARD_SELECTED       (0x123E2AFF)
+#define SELECTOR_FOOTER              (0x141B17FF)
 
-#define SELECTOR_WHITE               (0xFFFFFFFF)
-#define SELECTOR_GREY                (0xAFAFAFFF)
-#define SELECTOR_RED                 (0xE53935FF)
-#define SELECTOR_GREEN               (0x46C06FFF)
+#define SELECTOR_WHITE               (0xE8EFEAFF)
+#define SELECTOR_BUTTON_TEXT         (0xF3F7F4FF)
+#define SELECTOR_GREY                (0x8E9D95FF)
+#define SELECTOR_GREEN               (0x0B4A2EFF)
+#define SELECTOR_GREEN_LIGHT         (0x1B7048FF)
+#define SELECTOR_DISABLED            (0x303A35FF)
 
-#define SELECTOR_HOVER               (0xE53935FF)
+#define SELECTOR_HOVER               (0x25875AFF)
 
 #define SELECTOR_SLOT_COUNT          (3)
 
 new PlayerText:s_SelectorPanel[MAX_PLAYERS];
+new PlayerText:s_SelectorSurface[MAX_PLAYERS];
+new PlayerText:s_SelectorHeader[MAX_PLAYERS];
+new PlayerText:s_SelectorAccent[MAX_PLAYERS];
 new PlayerText:s_SelectorTitle[MAX_PLAYERS];
+new PlayerText:s_SelectorSectionTitle[MAX_PLAYERS];
 
 new PlayerText:s_SelectorFrame[MAX_PLAYERS][SELECTOR_SLOT_COUNT];
+new PlayerText:s_SelectorSlotLabel[MAX_PLAYERS][SELECTOR_SLOT_COUNT];
 new PlayerText:s_SelectorPreview[MAX_PLAYERS][SELECTOR_SLOT_COUNT];
 new PlayerText:s_SelectorEmpty[MAX_PLAYERS][SELECTOR_SLOT_COUNT];
 
+new PlayerText:s_SelectorFooter[MAX_PLAYERS];
+new PlayerText:s_SelectorNameCaption[MAX_PLAYERS];
 new PlayerText:s_SelectorName[MAX_PLAYERS];
 
 new PlayerText:s_SelectorInfoButton[MAX_PLAYERS];
@@ -59,15 +72,21 @@ stock PlayerText:Selector_CreateText(playerid, Float:x, Float:y, const text[], c
     return td;
 }
 
-stock PlayerText:Selector_CreateButton(playerid, Float:x, Float:y, const text[], boxColor)
+stock PlayerText:Selector_CreateButton(
+    playerid,
+    Float:x,
+    Float:y,
+    const text[],
+    boxColor,
+    Float:width = 118.0)
 {
-    new PlayerText:td = Selector_CreateText(playerid, x, y, text, SELECTOR_WHITE, 0.20, 1.0);
+    new PlayerText:td = Selector_CreateText(playerid, x, y, text, SELECTOR_BUTTON_TEXT, 0.19, 1.0);
 
     PlayerTextDrawAlignment(playerid, td, TEXT_DRAW_ALIGN_CENTER);
     PlayerTextDrawUseBox(playerid, td, true);
     PlayerTextDrawBoxColor(playerid, td, boxColor);
 
-    PlayerTextDrawTextSize(playerid, td, 12.0, 105.0);
+    PlayerTextDrawTextSize(playerid, td, 13.0, width);
     PlayerTextDrawSetSelectable(playerid, td, true);
 
     return td;
@@ -114,61 +133,107 @@ CharacterSelector_CreateUI(playerid)
         return 1;
     }
 
-    // Main black panel.
-    s_SelectorPanel[playerid] = CreatePlayerTextDraw(playerid, 117.0, 91.0, "_");
-    PlayerTextDrawLetterSize(playerid, s_SelectorPanel[playerid], 0.0, 28.0);
-    PlayerTextDrawTextSize(playerid, s_SelectorPanel[playerid], 523.0, 0.0);
+    // Dark green outer frame.
+    s_SelectorPanel[playerid] = CreatePlayerTextDraw(playerid, 80.0, 61.0, "_");
+    PlayerTextDrawLetterSize(playerid, s_SelectorPanel[playerid], 0.0, 32.4);
+    PlayerTextDrawTextSize(playerid, s_SelectorPanel[playerid], 560.0, 0.0);
     PlayerTextDrawUseBox(playerid, s_SelectorPanel[playerid], true);
-    PlayerTextDrawBoxColor(playerid, s_SelectorPanel[playerid], SELECTOR_PANEL);
+    PlayerTextDrawBoxColor(playerid, s_SelectorPanel[playerid], SELECTOR_BORDER);
 
-    s_SelectorTitle[playerid] = Selector_CreateText(playerid, 320.0, 105.0, "LOS SANTOS ROLEPLAY", SELECTOR_RED, 0.32, 1.45);
+    // Inner surface and dashboard header.
+    s_SelectorSurface[playerid] = CreatePlayerTextDraw(playerid, 84.0, 65.0, "_");
+    PlayerTextDrawLetterSize(playerid, s_SelectorSurface[playerid], 0.0, 31.6);
+    PlayerTextDrawTextSize(playerid, s_SelectorSurface[playerid], 556.0, 0.0);
+    PlayerTextDrawUseBox(playerid, s_SelectorSurface[playerid], true);
+    PlayerTextDrawBoxColor(playerid, s_SelectorSurface[playerid], SELECTOR_PANEL);
+
+    s_SelectorHeader[playerid] = CreatePlayerTextDraw(playerid, 84.0, 65.0, "_");
+    PlayerTextDrawLetterSize(playerid, s_SelectorHeader[playerid], 0.0, 4.2);
+    PlayerTextDrawTextSize(playerid, s_SelectorHeader[playerid], 556.0, 0.0);
+    PlayerTextDrawUseBox(playerid, s_SelectorHeader[playerid], true);
+    PlayerTextDrawBoxColor(playerid, s_SelectorHeader[playerid], SELECTOR_HEADER);
+
+    s_SelectorAccent[playerid] = CreatePlayerTextDraw(playerid, 84.0, 103.0, "_");
+    PlayerTextDrawLetterSize(playerid, s_SelectorAccent[playerid], 0.0, 0.45);
+    PlayerTextDrawTextSize(playerid, s_SelectorAccent[playerid], 556.0, 0.0);
+    PlayerTextDrawUseBox(playerid, s_SelectorAccent[playerid], true);
+    PlayerTextDrawBoxColor(playerid, s_SelectorAccent[playerid], SELECTOR_GREEN_LIGHT);
+
+    s_SelectorTitle[playerid] = Selector_CreateText(playerid, 320.0, 74.0, "LOS SANTOS ROLEPLAY", SELECTOR_WHITE, 0.28, 1.20);
     PlayerTextDrawFont(playerid, s_SelectorTitle[playerid], TEXT_DRAW_FONT_3);
     PlayerTextDrawAlignment(playerid, s_SelectorTitle[playerid], TEXT_DRAW_ALIGN_CENTER);
     PlayerTextDrawSetOutline(playerid, s_SelectorTitle[playerid], 2);
 
-    new const Float:slotX[3] = {155.0, 270.0, 385.0};
+    s_SelectorSectionTitle[playerid] = Selector_CreateText(playerid, 537.0, 77.0, "CHARACTER SELECTION", SELECTOR_GREY, 0.18, 0.95);
+    PlayerTextDrawAlignment(playerid, s_SelectorSectionTitle[playerid], TEXT_DRAW_ALIGN_RIGHT);
+
+    new const Float:slotX[3] = {102.0, 252.0, 402.0};
 
     for (new slot = 0; slot < SELECTOR_SLOT_COUNT; slot++)
     {
-        // Frame.
-        s_SelectorFrame[playerid][slot] = CreatePlayerTextDraw(playerid, slotX[slot], 145.0, "_");
-        PlayerTextDrawLetterSize(playerid, s_SelectorFrame[playerid][slot], 0.0, 14.0);
-        PlayerTextDrawTextSize(playerid, s_SelectorFrame[playerid][slot], slotX[slot] + 100.0, 0.0);
+        // Character card.
+        s_SelectorFrame[playerid][slot] = CreatePlayerTextDraw(playerid, slotX[slot], 122.0, "_");
+        PlayerTextDrawLetterSize(playerid, s_SelectorFrame[playerid][slot], 0.0, 15.0);
+        PlayerTextDrawTextSize(playerid, s_SelectorFrame[playerid][slot], slotX[slot] + 136.0, 0.0);
         PlayerTextDrawUseBox(playerid, s_SelectorFrame[playerid][slot], true);
-        PlayerTextDrawBoxColor(playerid, s_SelectorFrame[playerid][slot], SELECTOR_PANEL_LIGHT);
+        PlayerTextDrawBoxColor(playerid, s_SelectorFrame[playerid][slot], SELECTOR_CARD);
+
+        new slotText[16];
+        format(slotText, sizeof(slotText), "SLOT %02d", slot + 1);
+        s_SelectorSlotLabel[playerid][slot] = Selector_CreateText(
+            playerid,
+            slotX[slot] + 10.0,
+            131.0,
+            slotText,
+            SELECTOR_GREY,
+            0.18,
+            0.85
+        );
 
         // Skin model preview.
-        s_SelectorPreview[playerid][slot] = CreatePlayerTextDraw(playerid, slotX[slot] + 5.0, 150.0, "_");
+        s_SelectorPreview[playerid][slot] = CreatePlayerTextDraw(playerid, slotX[slot] + 5.0, 145.0, "_");
         PlayerTextDrawFont(playerid, s_SelectorPreview[playerid][slot], TEXT_DRAW_FONT_MODEL_PREVIEW);
-        PlayerTextDrawTextSize(playerid, s_SelectorPreview[playerid][slot], 90.0, 105.0);
+        PlayerTextDrawTextSize(playerid, s_SelectorPreview[playerid][slot], 126.0, 118.0);
+        PlayerTextDrawColor(playerid, s_SelectorPreview[playerid][slot], 0xFFFFFFFF);
+        PlayerTextDrawBackgroundColor(playerid, s_SelectorPreview[playerid][slot], 0x00000000);
+        PlayerTextDrawUseBox(playerid, s_SelectorPreview[playerid][slot], false);
         PlayerTextDrawSetPreviewModel(playerid, s_SelectorPreview[playerid][slot], 26);
-        PlayerTextDrawSetPreviewRot(playerid, s_SelectorPreview[playerid][slot], -10.0, 0.0, -20.0, 1.0);
+        PlayerTextDrawSetPreviewRot(playerid, s_SelectorPreview[playerid][slot], -10.0, 0.0, -20.0, 1.25);
         PlayerTextDrawSetSelectable(playerid, s_SelectorPreview[playerid][slot], true);
 
         // Empty slot.
-        s_SelectorEmpty[playerid][slot] = Selector_CreateText(playerid, slotX[slot] + 50.0, 190.0, "+~n~KHOI TAO", SELECTOR_GREY, 0.20, 1.0);
+        s_SelectorEmpty[playerid][slot] = Selector_CreateText(playerid, slotX[slot] + 68.0, 189.0, "EMPTY SLOT~n~~g~+ CREATE", SELECTOR_GREY, 0.18, 0.95);
         PlayerTextDrawAlignment(playerid, s_SelectorEmpty[playerid][slot], TEXT_DRAW_ALIGN_CENTER);
-        PlayerTextDrawTextSize(playerid, s_SelectorEmpty[playerid][slot], 18.0, 85.0);
+        PlayerTextDrawTextSize(playerid, s_SelectorEmpty[playerid][slot], 90.0, 122.0);
         PlayerTextDrawSetSelectable(playerid, s_SelectorEmpty[playerid][slot], true);
     }
 
-    s_SelectorName[playerid] = Selector_CreateText(playerid, 320.0, 278.0, "Chon mot nhan vat", SELECTOR_WHITE, 0.23, 1.05);
+    // Selected character summary.
+    s_SelectorFooter[playerid] = CreatePlayerTextDraw(playerid, 102.0, 284.0, "_");
+    PlayerTextDrawLetterSize(playerid, s_SelectorFooter[playerid], 0.0, 3.6);
+    PlayerTextDrawTextSize(playerid, s_SelectorFooter[playerid], 538.0, 0.0);
+    PlayerTextDrawUseBox(playerid, s_SelectorFooter[playerid], true);
+    PlayerTextDrawBoxColor(playerid, s_SelectorFooter[playerid], SELECTOR_FOOTER);
+
+    s_SelectorNameCaption[playerid] = Selector_CreateText(playerid, 320.0, 293.0, "SELECTED CHARACTER", SELECTOR_GREEN_LIGHT, 0.16, 0.75);
+    PlayerTextDrawAlignment(playerid, s_SelectorNameCaption[playerid], TEXT_DRAW_ALIGN_CENTER);
+    s_SelectorName[playerid] = Selector_CreateText(playerid, 320.0, 307.0, "Chon mot nhan vat", SELECTOR_WHITE, 0.22, 1.0);
     PlayerTextDrawAlignment(playerid, s_SelectorName[playerid], TEXT_DRAW_ALIGN_CENTER);
 
-    s_SelectorInfoButton[playerid] = Selector_CreateButton(playerid, 205.0, 313.0, "XEM THONG TIN", 0x252525DD);
-    s_SelectorPlayButton[playerid] = Selector_CreateButton(playerid, 320.0, 313.0, "VAO GAME", 0x145E2EDD);
-    s_SelectorDeleteButton[playerid] = Selector_CreateButton(playerid, 435.0, 313.0, "XOA NHAN VAT", 0x601515DD);
+    s_SelectorInfoButton[playerid] = Selector_CreateButton(playerid, 175.0, 329.0, "THONG TIN", SELECTOR_GREEN);
+    s_SelectorPlayButton[playerid] = Selector_CreateButton(playerid, 320.0, 329.0, "VAO GAME", SELECTOR_GREEN_LIGHT);
+    s_SelectorDeleteButton[playerid] = Selector_CreateButton(playerid, 465.0, 329.0, "CHUA HO TRO", SELECTOR_DISABLED);
 
     // Info overlay.
-    s_SelectorInfoPanel[playerid] = CreatePlayerTextDraw(playerid, 185.0, 125.0, "_");
-    PlayerTextDrawLetterSize(playerid, s_SelectorInfoPanel[playerid], 0.0, 22.0);
-    PlayerTextDrawTextSize(playerid, s_SelectorInfoPanel[playerid], 455.0, 0.0);
+    s_SelectorInfoPanel[playerid] = CreatePlayerTextDraw(playerid, 150.0, 126.0, "_");
+    PlayerTextDrawLetterSize(playerid, s_SelectorInfoPanel[playerid], 0.0, 22.3);
+    PlayerTextDrawTextSize(playerid, s_SelectorInfoPanel[playerid], 490.0, 0.0);
     PlayerTextDrawUseBox(playerid, s_SelectorInfoPanel[playerid], true);
-    PlayerTextDrawBoxColor(playerid, s_SelectorInfoPanel[playerid], 0x000000E5);
+    PlayerTextDrawBoxColor(playerid, s_SelectorInfoPanel[playerid], SELECTOR_CARD);
 
-    s_SelectorInfoText[playerid] = Selector_CreateText(playerid, 205.0, 145.0, "Dang tai thong tin...", SELECTOR_WHITE, 0.19, 0.95);
+    s_SelectorInfoText[playerid] = Selector_CreateText(playerid, 174.0, 143.0, "Dang tai thong tin...", SELECTOR_WHITE, 0.19, 0.95);
 
-    s_SelectorInfoClose[playerid] = Selector_CreateButton(playerid, 320.0, 320.0, "QUAY LAI", 0x252525FF);
+    s_SelectorInfoClose[playerid] = Selector_CreateButton(playerid, 320.0, 340.0, "QUAY LAI", SELECTOR_GREEN_LIGHT, 150.0);
 
     s_SelectorReady[playerid] = true;
     return 1;
@@ -184,7 +249,21 @@ CharacterSelector_Refresh(playerid)
 
     for (new slot = 0; slot < SELECTOR_SLOT_COUNT; slot++)
     {
+        PlayerTextDrawHide(playerid, s_SelectorFrame[playerid][slot]);
+
+        if (s_SelectedCharacterSlot[playerid] == slot + 1)
+        {
+            PlayerTextDrawBoxColor(playerid, s_SelectorFrame[playerid][slot], SELECTOR_CARD_SELECTED);
+            PlayerTextDrawColor(playerid, s_SelectorSlotLabel[playerid][slot], SELECTOR_WHITE);
+        }
+        else
+        {
+            PlayerTextDrawBoxColor(playerid, s_SelectorFrame[playerid][slot], SELECTOR_CARD);
+            PlayerTextDrawColor(playerid, s_SelectorSlotLabel[playerid][slot], SELECTOR_GREY);
+        }
+
         PlayerTextDrawShow(playerid, s_SelectorFrame[playerid][slot]);
+        PlayerTextDrawShow(playerid, s_SelectorSlotLabel[playerid][slot]);
 
         if (s_CharacterSlotID[playerid][slot] == INVALID_CHARACTER_ID)
         {
@@ -237,10 +316,16 @@ CharacterSelector_OpenUI(playerid)
     s_SelectorInfoVisible[playerid] = false;
 
     PlayerTextDrawShow(playerid, s_SelectorPanel[playerid]);
+    PlayerTextDrawShow(playerid, s_SelectorSurface[playerid]);
+    PlayerTextDrawShow(playerid, s_SelectorHeader[playerid]);
+    PlayerTextDrawShow(playerid, s_SelectorAccent[playerid]);
     PlayerTextDrawShow(playerid, s_SelectorTitle[playerid]);
+    PlayerTextDrawShow(playerid, s_SelectorSectionTitle[playerid]);
 
     CharacterSelector_Refresh(playerid);
 
+    PlayerTextDrawShow(playerid, s_SelectorFooter[playerid]);
+    PlayerTextDrawShow(playerid, s_SelectorNameCaption[playerid]);
     PlayerTextDrawShow(playerid, s_SelectorName[playerid]);
     PlayerTextDrawShow(playerid, s_SelectorInfoButton[playerid]);
     PlayerTextDrawShow(playerid, s_SelectorPlayButton[playerid]);
@@ -260,7 +345,13 @@ CharacterSelector_CloseUI(playerid)
     CancelSelectTextDraw(playerid);
 
     PlayerTextDrawHide(playerid, s_SelectorPanel[playerid]);
+    PlayerTextDrawHide(playerid, s_SelectorSurface[playerid]);
+    PlayerTextDrawHide(playerid, s_SelectorHeader[playerid]);
+    PlayerTextDrawHide(playerid, s_SelectorAccent[playerid]);
     PlayerTextDrawHide(playerid, s_SelectorTitle[playerid]);
+    PlayerTextDrawHide(playerid, s_SelectorSectionTitle[playerid]);
+    PlayerTextDrawHide(playerid, s_SelectorFooter[playerid]);
+    PlayerTextDrawHide(playerid, s_SelectorNameCaption[playerid]);
     PlayerTextDrawHide(playerid, s_SelectorName[playerid]);
 
     PlayerTextDrawHide(playerid, s_SelectorInfoButton[playerid]);
@@ -274,6 +365,7 @@ CharacterSelector_CloseUI(playerid)
     for (new slot = 0; slot < SELECTOR_SLOT_COUNT; slot++)
     {
         PlayerTextDrawHide(playerid, s_SelectorFrame[playerid][slot]);
+        PlayerTextDrawHide(playerid, s_SelectorSlotLabel[playerid][slot]);
         PlayerTextDrawHide(playerid, s_SelectorPreview[playerid][slot]);
         PlayerTextDrawHide(playerid, s_SelectorEmpty[playerid][slot]);
     }
@@ -307,7 +399,7 @@ CharacterSelector_SelectSlot(playerid, slotIndex)
         return 1;
     }
 
-    PlayerTextDrawSetString(playerid, s_SelectorName[playerid], s_CharacterSlotName[playerid][slotIndex]);
+    CharacterSelector_Refresh(playerid);
     return 1;
 }
 
@@ -410,7 +502,7 @@ public OnCharacterSelectorInfoLoaded(playerid)
         format(genderName, sizeof(genderName), "Nu");
     }
 
-   format(body, sizeof(body), "~r~THONG TIN NHAN VAT~w~~n~~n~Ho ten: ~g~%s~w~~n~Gioi tinh: ~g~%s~w~~n~Ngay sinh: ~g~%02d/%02d/%d~w~~n~Tuoi: ~g~%d~w~~n~Chieu cao: ~g~%d cm~w~~n~Can nang: ~g~%d kg~w~~n~Mau da: ~g~%s~w~~n~Noi sinh: ~g~%s~w~~n~~n~Cap do: ~g~%d~w~~n~Tien mat: ~g~$%d~w~~n~Ngan hang: ~g~$%d~w~~n~~n~Vi tri cuoi: ~g~%s~w~~n~Lan cuoi choi: ~g~%s",
+   format(body, sizeof(body), "~g~THONG TIN NHAN VAT~w~~n~~n~Ho ten: ~g~%s~w~~n~Gioi tinh: ~g~%s~w~~n~Ngay sinh: ~g~%02d/%02d/%d~w~~n~Tuoi: ~g~%d~w~~n~Chieu cao: ~g~%d cm~w~~n~Can nang: ~g~%d kg~w~~n~Mau da: ~g~%s~w~~n~Noi sinh: ~g~%s~w~~n~~n~Cap do: ~g~%d~w~~n~Tien mat: ~g~$%d~w~~n~Ngan hang: ~g~$%d~w~~n~~n~Vi tri cuoi: ~g~%s~w~~n~Lan cuoi choi: ~g~%s",
     name,
     genderName,
     day,
@@ -444,6 +536,8 @@ public OnCharacterSelectorInfoLoaded(playerid)
 
 CharacterSelector_CloseMainElements(playerid)
 {
+    PlayerTextDrawHide(playerid, s_SelectorFooter[playerid]);
+    PlayerTextDrawHide(playerid, s_SelectorNameCaption[playerid]);
     PlayerTextDrawHide(playerid, s_SelectorName[playerid]);
     PlayerTextDrawHide(playerid, s_SelectorInfoButton[playerid]);
     PlayerTextDrawHide(playerid, s_SelectorPlayButton[playerid]);
@@ -452,6 +546,7 @@ CharacterSelector_CloseMainElements(playerid)
     for (new slot = 0; slot < SELECTOR_SLOT_COUNT; slot++)
     {
         PlayerTextDrawHide(playerid, s_SelectorFrame[playerid][slot]);
+        PlayerTextDrawHide(playerid, s_SelectorSlotLabel[playerid][slot]);
         PlayerTextDrawHide(playerid, s_SelectorPreview[playerid][slot]);
         PlayerTextDrawHide(playerid, s_SelectorEmpty[playerid][slot]);
     }
@@ -469,6 +564,8 @@ CharacterSelector_CloseInfo(playerid)
 
     CharacterSelector_Refresh(playerid);
 
+    PlayerTextDrawShow(playerid, s_SelectorFooter[playerid]);
+    PlayerTextDrawShow(playerid, s_SelectorNameCaption[playerid]);
     PlayerTextDrawShow(playerid, s_SelectorName[playerid]);
     PlayerTextDrawShow(playerid, s_SelectorInfoButton[playerid]);
     PlayerTextDrawShow(playerid, s_SelectorPlayButton[playerid]);
