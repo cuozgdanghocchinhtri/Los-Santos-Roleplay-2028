@@ -2,7 +2,10 @@
 // Definitions
 //-----------------------------------------------------------------------------
 
-// Password length limits for account creation.
+// Account username and password limits.
+#define ACCOUNT_MIN_USERNAME_LENGTH (3)
+#define ACCOUNT_MAX_USERNAME_LENGTH (24)
+#define ACCOUNT_USERNAME_LENGTH     (ACCOUNT_MAX_USERNAME_LENGTH + 1)
 #define ACCOUNT_MIN_PASSWORD_LENGTH (6)
 
 // Invalid database account ID.
@@ -10,143 +13,197 @@
 
 // Player account data variables.
 static
-        s_PlayerAccountID[MAX_PLAYERS]       = { INVALID_ACCOUNT_ID, ... },
-        bool:s_IsPlayerLoggedIn[MAX_PLAYERS] = { false, ...              };
+        s_PlayerAccountID[MAX_PLAYERS],
+        s_PlayerAccountUsername[MAX_PLAYERS][ACCOUNT_USERNAME_LENGTH],
+        bool:s_IsPlayerLoggedIn[MAX_PLAYERS];
 
 //-----------------------------------------------------------------------------
 // Functions
 //-----------------------------------------------------------------------------
 
-// Checks whether an account with the player's name already exists in the database.
-// This function is used to determine if the player should register or log in.
-Account_Check(playerid)
+Account_Reset(playerid)
 {
-    // Initialize the variables here.
     s_PlayerAccountID[playerid] = INVALID_ACCOUNT_ID;
-    SetPlayerLoggedIn(playerid, false);    
+    s_PlayerAccountUsername[playerid][0] = 0;
+    s_IsPlayerLoggedIn[playerid] = false;
 
-    new 
-        query[128];
-    
-    mysql_format(g_DatabaseHandle, query, sizeof (query), "SELECT `password_hash` FROM `player_accounts` WHERE `username` = '%e' LIMIT 1;", ReturnPlayerName(playerid));
+    DeletePVar(playerid, "tempPassword");
+    return 1;
+}
+
+// Shows the account username prompt.  The launcher nickname is intentionally
+// kept separate from the master account username.
+Account_ShowUsernameDialog(playerid, bool:invalid = false)
+{
+    ShowPlayerDialog(
+        playerid,
+        DIALOG_ACCOUNT_USERNAME,
+        DIALOG_STYLE_INPUT,
+        "LS:RP Account",
+        "Enter your account username below.\n\nThis is your OOC master account, not your character name.",
+        "Continue",
+        "Quit"
+    );
+
+    if (invalid)
+    {
+        SendClientMessage(playerid, COLOR_RED, "Account usernames must be 3-24 characters and use only letters, numbers or underscore.");
+    }
+    return 1;
+}
+
+bool:IsValidAccountUsername(const username[])
+{
+    new const length = strlen(username);
+    if (length < ACCOUNT_MIN_USERNAME_LENGTH || length > ACCOUNT_MAX_USERNAME_LENGTH)
+    {
+        return false;
+    }
+
+    for (new i = 0; i < length; i++)
+    {
+        new const ch = username[i];
+        if (!((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_'))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+SetPlayerAccountUsername(playerid, const username[])
+{
+    format(s_PlayerAccountUsername[playerid], ACCOUNT_USERNAME_LENGTH, "%s", username);
+    return 1;
+}
+
+stock GetPlayerAccountUsername(playerid, destination[], size)
+{
+    format(destination, size, "%s", s_PlayerAccountUsername[playerid]);
+    return 1;
+}
+
+// Checks whether the entered master account username already exists.
+Account_Check(playerid, const username[])
+{
+    SetPlayerAccountUsername(playerid, username);
+    s_PlayerAccountID[playerid] = INVALID_ACCOUNT_ID;
+    SetPlayerLoggedIn(playerid, false);
+
+    new query[256];
+    mysql_format(g_DatabaseHandle, query, sizeof(query), "SELECT `account_id`,`password_hash` FROM `player_accounts` WHERE `username`='%e' LIMIT 1;", username);
     mysql_tquery(g_DatabaseHandle, query, "OnPlayerAccountCheck", "d", playerid);
-
     return 1;
 }
 
 // Shows the registration dialog to the player.
 Account_ShowRegistrationDialog(playerid, bool:badpass = false)
 {
-    // Show the dialog.
     ShowPlayerDialog(
         playerid,
         DIALOG_REGISTRATION,
         DIALOG_STYLE_PASSWORD,
-        "Registration",
-        "Create a password for your new account.\n\n\
-        The password must be longer than %d characters:",
+        "Create LS:RP Account",
+        "Create a password for this account.\n\nThe password must be at least %d characters:",
         "Register",
-        "Quit",
+        "Back",
         ACCOUNT_MIN_PASSWORD_LENGTH
     );
 
-    // If `badpass` is true, it means the player's password didn't meet the length
-    // requirements, so we show a warning explaining what went wrong.
     if (badpass)
     {
-        SendClientMessage(playerid, COLOR_RED, "Sorry, something went wrong. The password you chose is too short.");
-        SendClientMessage(playerid, COLOR_RED, "Please choose a stronger password and try again.");
+        SendClientMessage(playerid, COLOR_RED, "Your password is too short. Please choose a stronger password.");
     }
-
     return 1;
 }
 
 // Shows the login dialog to the player.
 Account_ShowLoginDialog(playerid)
 {
-    // Show the dialog.
+    new username[ACCOUNT_USERNAME_LENGTH], caption[64];
+    GetPlayerAccountUsername(playerid, username, sizeof(username));
+    format(caption, sizeof(caption), "Login - %s", username);
+
     ShowPlayerDialog(
         playerid,
         DIALOG_LOGIN,
         DIALOG_STYLE_PASSWORD,
+        caption,
+        "Enter the password for your LS:RP account.",
         "Login",
-        "Type your password below to login.",
-        "Login",
-        "Quit"
+        "Back"
     );
-
     return 1;
 }
 
-// Validates the player's password length and format.
 bool:IsValidPassword(const password[])
 {
-    // Check if password length is within allowed limits.
-    if (strlen(password) < ACCOUNT_MIN_PASSWORD_LENGTH)
-    {
-        // Password length invalid.
-        return false;
-    }
-
-    // Additional validations can be added here in the future, such as checking
-    // for symbols, uppercase, lowercase letters, etc.
-
-    // Password is valid.
-    return true;
+    return strlen(password) >= ACCOUNT_MIN_PASSWORD_LENGTH;
 }
 
-// Hashes the given password for the specified player.
 HashPassword(playerid, const password[])
 {
     bcrypt_hash(playerid, "OnPasswordHash", password, BCRYPT_COST);
-}
-
-// Creates a new player account in the database.
-Account_Create(playerid, const hash[])
-{
-    new
-        query[256];
-
-    mysql_format(g_DatabaseHandle, query, sizeof(query),
-        "INSERT INTO `player_accounts` (\
-            `username`, \
-            `password_hash` \
-        ) VALUES ('%e', '%e');",
-        ReturnPlayerName(playerid), hash
-    );
-    mysql_tquery(g_DatabaseHandle, query, "OnPlayerRegister", "d", playerid);
-    
-    return 1;        
-}
-
-// Sets the account ID for the specified player.
-SetPlayerAccountID(playerid, accountid)
-{
-    s_PlayerAccountID[playerid] = accountid;
-
     return 1;
 }
 
-// Returns the player's account ID.
-stock GetPlayerAccountID(playerid)
+// Creates only the master account.  IC character data belongs in
+// `player_characters`, never in this table.
+Account_Create(playerid, const hash[])
 {
-    return IsPlayerConnected(playerid)
-    ? s_PlayerAccountID[playerid]
-    : INVALID_ACCOUNT_ID
-    ;
+    new query[384], username[ACCOUNT_USERNAME_LENGTH];
+    GetPlayerAccountUsername(playerid, username, sizeof(username));
+
+    mysql_format(g_DatabaseHandle, query, sizeof(query), "INSERT INTO `player_accounts` (`username`,`password_hash`) VALUES ('%e','%e');", username, hash);
+    mysql_tquery(g_DatabaseHandle, query, "OnPlayerRegister", "d", playerid);
+    return 1;
 }
 
-// Sets the player's logged-in state.
+SetPlayerAccountID(playerid, accountid)
+{
+    s_PlayerAccountID[playerid] = accountid;
+    return 1;
+}
+
+stock GetPlayerAccountID(playerid)
+{
+    return s_PlayerAccountID[playerid];
+}
+
 SetPlayerLoggedIn(playerid, bool:set)
 {
-    // Ensure the player is connected before modifying state.
     if (!IsPlayerConnected(playerid))
     {
         return 0;
     }
 
-    // Update the player's login state.
     s_IsPlayerLoggedIn[playerid] = set;
-
     return 1;
+}
+
+stock bool:IsPlayerLoggedIn(playerid)
+{
+    return IsPlayerConnected(playerid) && s_IsPlayerLoggedIn[playerid];
+}
+
+bool:IsAccountAlreadyOnline(playerid, accountid)
+{
+    if (accountid == INVALID_ACCOUNT_ID)
+    {
+        return false;
+    }
+
+    for (new i = 0; i < MAX_PLAYERS; i++)
+    {
+        if (i == playerid || !IsPlayerConnected(i) || !IsPlayerLoggedIn(i))
+        {
+            continue;
+        }
+
+        if (GetPlayerAccountID(i) == accountid)
+        {
+            return true;
+        }
+    }
+    return false;
 }

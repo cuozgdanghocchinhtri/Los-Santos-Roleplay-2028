@@ -69,6 +69,13 @@
 // Server
 #include "modules/core/server/database.pwn"
 
-// Player Account
+// Player Account + Characters
 #include "modules/core/player/account/utils.pwn"
+
+#include "modules/core/player/character/utils.pwn"
+#include "modules/core/player/character/cinematic.pwn"
+#include "modules/core/player/character/creator.pwn"
+#include "modules/core/player/character/selector.pwn"
+#include "modules/core/player/character/core.pwn"
+
 #include "modules/core/player/account/core.pwn"
