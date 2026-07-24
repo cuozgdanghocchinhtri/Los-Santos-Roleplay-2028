@@ -99,7 +99,7 @@
 
 
 #include "modules/system/job/commands.pwn"
-
+#include "modules/system/admin/admin_patch.pwn"
 #include "modules/system/admin/persistence.pwn"
 #include "modules/system/admin/commands.pwn"
 #include "modules/system/help/commands.pwn"

@@ -1,0 +1,496 @@
+diff --git a/gamemodes/modules/system/vehicles/controls.pwn b/gamemodes/modules/system/vehicles/controls.pwn
+--- a/gamemodes/modules/system/vehicles/controls.pwn
++++ b/gamemodes/modules/system/vehicles/controls.pwn
+@@ -7,7 +7,7 @@
+ #include <YSI_Coding\y_hooks>
+ #include <YSI_Game\y_vehicledata>
+ 
+-#define DIALOG_CAR_CONTROLS (5110)
++#define CAR_CONTROL_NEAR_RADIUS (5.0)
+ 
+ enum E_CAR_CONTROL_ACTION
+ {
+@@ -48,11 +48,10 @@
+ {
+     if (GetPlayerState(playerid) != PLAYER_STATE_DRIVER)
+     {
+-        ShowNotifyText(
++        SendClientMessage(
+             playerid,
+-            NOTIFY_TYPE_MODERN,
+-            "Ban phai ngoi o ghe lai cua phuong tien.",
+-            3000
++            COLOR_WHITE,
++            "{BFC0C2}Ban phai ngoi o {7A2929}ghe lai{BFC0C2} de su dung lenh dieu khien nay."
+         );
+         return false;
+     }
+@@ -60,14 +59,68 @@
+     vehicleid = GetPlayerVehicleID(playerid);
+     if (vehicleid == INVALID_VEHICLE_ID || !IsValidVehicle(vehicleid))
+     {
+-        ShowNotifyText(
++        SendClientMessage(
+             playerid,
+-            NOTIFY_TYPE_MODERN,
+-            "Khong tim thay phuong tien dang dieu khien.",
+-            3000
++            COLOR_WHITE,
++            "{BFC0C2}Khong tim thay phuong tien ban dang dieu khien. Hay vao lai ghe lai va thu lai lenh."
+         );
+         return false;
+     }
++    return true;
++}
++
++stock bool:CarControls_GetNearbyVehicle(playerid, &vehicleid)
++{
++    if (IsPlayerInAnyVehicle(playerid))
++    {
++        vehicleid = GetPlayerVehicleID(playerid);
++        if (vehicleid != INVALID_VEHICLE_ID && IsValidVehicle(vehicleid))
++        {
++            return true;
++        }
++    }
++
++    new Float:px, Float:py, Float:pz;
++    GetPlayerPos(playerid, px, py, pz);
++
++    new
++        foundVehicle = INVALID_VEHICLE_ID,
++        Float:bestDistance = CAR_CONTROL_NEAR_RADIUS + 0.001;
++
++    for (new id = 1; id < MAX_VEHICLES; id++)
++    {
++        if (!IsValidVehicle(id))
++        {
++            continue;
++        }
++
++        new Float:x, Float:y, Float:z;
++        GetVehiclePos(id, x, y, z);
++
++        new Float:distance = floatsqroot(
++            ((px - x) * (px - x)) +
++            ((py - y) * (py - y)) +
++            ((pz - z) * (pz - z))
++        );
++
++        if (distance <= CAR_CONTROL_NEAR_RADIUS && distance < bestDistance)
++        {
++            foundVehicle = id;
++            bestDistance = distance;
++        }
++    }
++
++    if (foundVehicle == INVALID_VEHICLE_ID)
++    {
++        SendClientMessage(
++            playerid,
++            COLOR_WHITE,
++            "{BFC0C2}Khong co phuong tien nao o gan ban. Hay dung trong pham vi {7A2929}5 met{BFC0C2} va thu lai."
++        );
++        return false;
++    }
++
++    vehicleid = foundVehicle;
+     return true;
+ }
+ 
+@@ -107,11 +160,10 @@
+ {
+     if (s_CarStartPending[playerid])
+     {
+-        ShowNotifyText(
++        SendClientMessage(
+             playerid,
+-            NOTIFY_TYPE_MODERN,
+-            "Phuong tien dang duoc khoi dong.",
+-            2500
++            COLOR_WHITE,
++            "{BFC0C2}Dong co dang trong qua trinh khoi dong. Hay cho den khi qua trinh nay hoan tat."
+         );
+         return 0;
+     }
+@@ -133,15 +185,10 @@
+     format(
+         message,
+         sizeof(message),
+-        "Dang khoi dong phuong tien ~r~%s..~w~ vui long doi",
++        "{BFC0C2}Ban dang khoi dong dong co cua chiec {264A73}%s{BFC0C2}. Qua trinh nay co the mat vai giay.",
+         modelName
+     );
+-    ShowNotifyText(
+-        playerid,
+-        NOTIFY_TYPE_BASIC,
+-        message,
+-        startDelay + 500
+-    );
++    SendClientMessage(playerid, COLOR_WHITE, message);
+ 
+     s_CarStartPending[playerid] = true;
+     s_CarStartVehicle[playerid] = vehicleid;
+@@ -170,11 +217,10 @@
+     {
+         if (IsPlayerConnected(playerid))
+         {
+-            ShowNotifyText(
++            SendClientMessage(
+                 playerid,
+-                NOTIFY_TYPE_MODERN,
+-                "Khoi dong phuong tien da bi huy.",
+-                3000
++                COLOR_WHITE,
++                "{BFC0C2}Qua trinh khoi dong da bi {7A2929}huy{BFC0C2} vi ban da roi ghe lai hoac phuong tien khong con hop le."
+             );
+         }
+         return 1;
+@@ -190,11 +236,10 @@
+         -1,
+         -1
+     );
+-    ShowNotifyText(
++    SendClientMessage(
+         playerid,
+-        NOTIFY_TYPE_BASIC,
+-        "Da khoi dong phuong tien thanh cong",
+-        3000
++        COLOR_WHITE,
++        "{BFC0C2}Dong co da duoc khoi dong thanh cong. Phuong tien hien da san sang de di chuyen."
+     );
+     return 1;
+ }
+@@ -226,11 +271,10 @@
+             -1,
+             -1
+         );
+-        ShowNotifyText(
++        SendClientMessage(
+             playerid,
+-            NOTIFY_TYPE_BASIC,
+-            "Da tat dong co phuong tien.",
+-            2500
++            COLOR_WHITE,
++            "{BFC0C2}Ban da tat dong co cua phuong tien. Dong co se ngung hoat dong cho den khi duoc khoi dong lai."
+         );
+         return 1;
+     }
+@@ -255,13 +299,12 @@
+     lights = lights == VEHICLE_PARAMS_ON ?
+         VEHICLE_PARAMS_OFF : VEHICLE_PARAMS_ON;
+     SetVehicleParamsEx(vehicleid, -1, lights, -1, -1, -1, -1, -1);
+-    ShowNotifyText(
++    SendClientMessage(
+         playerid,
+-        NOTIFY_TYPE_MODERN,
++        COLOR_WHITE,
+         lights == VEHICLE_PARAMS_ON ?
+-            "Da bat den phuong tien." :
+-            "Da tat den phuong tien.",
+-        2500
++            "{BFC0C2}Ban da bat he thong den cua phuong tien." :
++            "{BFC0C2}Ban da tat he thong den cua phuong tien."
+     );
+     return 1;
+ }
+@@ -291,13 +334,12 @@
+         windowState,
+         windowState
+     );
+-    ShowNotifyText(
++    SendClientMessage(
+         playerid,
+-        NOTIFY_TYPE_MODERN,
++        COLOR_WHITE,
+         windowState == VEHICLE_PARAMS_ON ?
+-            "Da ha cua kinh phuong tien." :
+-            "Da dong cua kinh phuong tien.",
+-        2500
++            "{BFC0C2}Ban da ha cac cua kinh cua phuong tien." :
++            "{BFC0C2}Ban da dong cac cua kinh cua phuong tien."
+     );
+     return 1;
+ }
+@@ -319,13 +361,12 @@
+     doors = doors == VEHICLE_PARAMS_ON ?
+         VEHICLE_PARAMS_OFF : VEHICLE_PARAMS_ON;
+     SetVehicleParamsEx(vehicleid, -1, -1, -1, doors, -1, -1, -1);
+-    ShowNotifyText(
++    SendClientMessage(
+         playerid,
+-        NOTIFY_TYPE_MODERN,
++        COLOR_WHITE,
+         doors == VEHICLE_PARAMS_ON ?
+-            "Da khoa cua phuong tien." :
+-            "Da mo khoa cua phuong tien.",
+-        2500
++            "{BFC0C2}Ban da {264A73}khoa{BFC0C2} cua phuong tien. Nguoi ben ngoai se khong the vao xe." :
++            "{BFC0C2}Ban da {264A73}mo khoa{BFC0C2} cua phuong tien. Cua xe hien co the su dung binh thuong."
+     );
+     return 1;
+ }
+@@ -347,13 +388,12 @@
+     bonnet = bonnet == VEHICLE_PARAMS_ON ?
+         VEHICLE_PARAMS_OFF : VEHICLE_PARAMS_ON;
+     SetVehicleParamsEx(vehicleid, -1, -1, -1, -1, bonnet, -1, -1);
+-    ShowNotifyText(
++    SendClientMessage(
+         playerid,
+-        NOTIFY_TYPE_MODERN,
++        COLOR_WHITE,
+         bonnet == VEHICLE_PARAMS_ON ?
+-            "Da mo nap capo." :
+-            "Da dong nap capo.",
+-        2500
++            "{BFC0C2}Ban da mo {264A73}nap capo{BFC0C2} cua phuong tien." :
++            "{BFC0C2}Ban da dong {264A73}nap capo{BFC0C2} cua phuong tien."
+     );
+     return 1;
+ }
+@@ -375,18 +415,80 @@
+     boot = boot == VEHICLE_PARAMS_ON ?
+         VEHICLE_PARAMS_OFF : VEHICLE_PARAMS_ON;
+     SetVehicleParamsEx(vehicleid, -1, -1, -1, -1, -1, boot, -1);
+-    ShowNotifyText(
++    SendClientMessage(
+         playerid,
+-        NOTIFY_TYPE_MODERN,
++        COLOR_WHITE,
+         boot == VEHICLE_PARAMS_ON ?
+-            "Da mo cop phuong tien." :
+-            "Da dong cop phuong tien.",
+-        2500
+-    );
+-    return 1;
+-}
+-
+-stock CarControls_Execute(playerid, E_CAR_CONTROL_ACTION:action)
++            "{BFC0C2}Ban da mo {264A73}cop sau{BFC0C2} cua phuong tien." :
++            "{BFC0C2}Ban da dong {264A73}cop sau{BFC0C2} cua phuong tien."
++    );
++    return 1;
++}
++
++stock CarControls_ShowStats(playerid)
++{
++    new vehicleid;
++    if (!CarControls_GetNearbyVehicle(playerid, vehicleid))
++    {
++        return 0;
++    }
++
++    new engine, lights, alarm, doors, bonnet, boot, objective;
++    CarControls_GetParams(
++        vehicleid,
++        engine,
++        lights,
++        alarm,
++        doors,
++        bonnet,
++        boot,
++        objective
++    );
++
++    new modelName[32], message[144];
++    new const modelID = GetVehicleModel(vehicleid);
++
++    if (modelID >= 400 && modelID <= 611)
++    {
++        Model_GetName(modelID, modelName);
++    }
++    else
++    {
++        format(modelName, sizeof(modelName), "Unknown");
++    }
++
++    format(
++        message,
++        sizeof(message),
++        "{BFC0C2}Phuong tien: {264A73}%s {BFC0C2}(ID %d / Model %d).",
++        modelName,
++        vehicleid,
++        modelID
++    );
++    SendClientMessage(playerid, COLOR_WHITE, message);
++
++    format(
++        message,
++        sizeof(message),
++        "{BFC0C2}Dong co: {264A73}%s {BFC0C2}| Den: {264A73}%s {BFC0C2}| Khoa: {264A73}%s",
++        engine == VEHICLE_PARAMS_ON ? "BAT" : "TAT",
++        lights == VEHICLE_PARAMS_ON ? "BAT" : "TAT",
++        doors == VEHICLE_PARAMS_ON ? "KHOA" : "MO"
++    );
++    SendClientMessage(playerid, COLOR_WHITE, message);
++
++    format(
++        message,
++        sizeof(message),
++        "{BFC0C2}Capo: {264A73}%s {BFC0C2}| Cop sau: {264A73}%s",
++        bonnet == VEHICLE_PARAMS_ON ? "MO" : "DONG",
++        boot == VEHICLE_PARAMS_ON ? "MO" : "DONG"
++    );
++    SendClientMessage(playerid, COLOR_WHITE, message);
++    return 1;
++}
++
++stock CarControls_ExecuteDriver(playerid, E_CAR_CONTROL_ACTION:action)
+ {
+     new vehicleid;
+     if (!CarControls_GetDriverVehicle(playerid, vehicleid))
+@@ -402,6 +504,20 @@
+             return CarControls_ToggleLights(playerid, vehicleid);
+         case CAR_ACTION_WINDOWS:
+             return CarControls_ToggleWindows(playerid, vehicleid);
++    }
++    return 0;
++}
++
++stock CarControls_ExecuteNearby(playerid, E_CAR_CONTROL_ACTION:action)
++{
++    new vehicleid;
++    if (!CarControls_GetNearbyVehicle(playerid, vehicleid))
++    {
++        return 0;
++    }
++
++    switch (action)
++    {
+         case CAR_ACTION_LOCK:
+             return CarControls_ToggleLock(playerid, vehicleid);
+         case CAR_ACTION_HOOD:
+@@ -412,72 +528,44 @@
+     return 0;
+ }
+ 
+-stock CarControls_ShowMenu(playerid)
+-{
+-    new vehicleid;
+-    if (!CarControls_GetDriverVehicle(playerid, vehicleid))
+-    {
+-        return 0;
+-    }
+-
+-    #pragma unused vehicleid
+-
+-    ShowPlayerDialog(
++CMD:car(playerid, params[])
++{
++    if (params[0] == 0)
++    {
++        SendClientMessage(
++            playerid,
++            COLOR_WHITE,
++            "{BFC0C2}Su dung: {264A73}/car engine, /car stats, /car lights, /car windows, /car lock, /car hood, /car trunk{BFC0C2}."
++        );
++        return 1;
++    }
++
++    if (!strcmp(params, "engine", true))
++        return CarControls_ExecuteDriver(playerid, CAR_ACTION_ENGINE);
++
++    if (!strcmp(params, "stats", true) || !strcmp(params, "status", true))
++        return CarControls_ShowStats(playerid);
++
++    if (!strcmp(params, "lights", true))
++        return CarControls_ExecuteDriver(playerid, CAR_ACTION_LIGHTS);
++
++    if (!strcmp(params, "windows", true))
++        return CarControls_ExecuteDriver(playerid, CAR_ACTION_WINDOWS);
++
++    if (!strcmp(params, "lock", true) || !strcmp(params, "doors", true))
++        return CarControls_ExecuteNearby(playerid, CAR_ACTION_LOCK);
++
++    if (!strcmp(params, "hood", true) || !strcmp(params, "bonnet", true))
++        return CarControls_ExecuteNearby(playerid, CAR_ACTION_HOOD);
++
++    if (!strcmp(params, "trunk", true) || !strcmp(params, "boot", true))
++        return CarControls_ExecuteNearby(playerid, CAR_ACTION_TRUNK);
++
++    SendClientMessage(
+         playerid,
+-        DIALOG_CAR_CONTROLS,
+-        DIALOG_STYLE_LIST,
+-        "Dieu khien phuong tien",
+-        "Dong co\nDen xe\nCua kinh\nKhoa cua\nNap capo\nCop xe",
+-        "Chon",
+-        "Dong"
+-    );
+-    return 1;
+-}
+-
+-CMD:car(playerid, params[])
+-{
+-    if (params[0] == 0)
+-    {
+-        CarControls_ShowMenu(playerid);
+-        return 1;
+-    }
+-
+-    if (!strcmp(params, "engine", true))
+-    {
+-        CarControls_Execute(playerid, CAR_ACTION_ENGINE);
+-    }
+-    else if (!strcmp(params, "lights", true))
+-    {
+-        CarControls_Execute(playerid, CAR_ACTION_LIGHTS);
+-    }
+-    else if (!strcmp(params, "windows", true))
+-    {
+-        CarControls_Execute(playerid, CAR_ACTION_WINDOWS);
+-    }
+-    else if (!strcmp(params, "lock", true) ||
+-        !strcmp(params, "doors", true))
+-    {
+-        CarControls_Execute(playerid, CAR_ACTION_LOCK);
+-    }
+-    else if (!strcmp(params, "hood", true) ||
+-        !strcmp(params, "bonnet", true))
+-    {
+-        CarControls_Execute(playerid, CAR_ACTION_HOOD);
+-    }
+-    else if (!strcmp(params, "trunk", true) ||
+-        !strcmp(params, "boot", true))
+-    {
+-        CarControls_Execute(playerid, CAR_ACTION_TRUNK);
+-    }
+-    else
+-    {
+-        ShowNotifyText(
+-            playerid,
+-            NOTIFY_TYPE_MODERN,
+-            "Su dung: /car [engine/lights/windows/lock/hood/trunk]",
+-            4500
+-        );
+-    }
++        COLOR_WHITE,
++        "{BFC0C2}Lenh khong hop le. Dung {264A73}/car engine, stats, lights, windows, lock, hood, trunk{BFC0C2}."
++    );
+     return 1;
+ }
+ 
+@@ -531,23 +619,3 @@
+     return 1;
+ }
+ 
+-hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
+-{
+-    #pragma unused inputtext
+-
+-    if (dialogid != DIALOG_CAR_CONTROLS)
+-    {
+-        return 1;
+-    }
+-    if (!response)
+-    {
+-        return 1;
+-    }
+-    if (listitem < 0 || listitem > _:CAR_ACTION_TRUNK)
+-    {
+-        return CarControls_ShowMenu(playerid);
+-    }
+-
+-    CarControls_Execute(playerid, E_CAR_CONTROL_ACTION:listitem);
+-    return 1;
+-}

@@ -1,0 +1,84 @@
+diff --git a/gamemodes/modules/utils/colors.pwn b/gamemodes/modules/utils/colors.pwn
+--- a/gamemodes/modules/utils/colors.pwn
++++ b/gamemodes/modules/utils/colors.pwn
+@@ -2,8 +2,12 @@
+ // Normal Colors
+ //-----------------------------------------------------------------------------
+ 
+-#define COLOR_WHITE (0xFFFFFFFF)
+-#define COLOR_RED   (0xFFDE97FF)
++#define COLOR_WHITE         (0xFFFFFFFF)
++#define COLOR_RED           (0x7A2929FF)
++#define COLOR_GRAY          (0xBFC0C2FF)
++#define COLOR_DARK_GRAY     (0x858585FF)
++#define COLOR_LSRP_BLUE     (0x264A73FF)
++#define COLOR_LSRP_RED      (0x7A2929FF)
+ 
+ //-----------------------------------------------------------------------------
+ // Roleplay chat colors
+@@ -20,8 +24,15 @@
+ // Embedded Colors
+ //-----------------------------------------------------------------------------
+ 
+-#define EMBED_WHITE "{FFFFFF}"
+-#define EMBED_RED   "{FFDE97}"
+-#define EMBED_RP_LIGHT_GRAY "{D9D9D9}"
+-#define EMBED_RP_DARK_RED   "{8B0000}"
+-#define EMBED_RP_DARK_BLUE  "{00008B}"
++#define EMBED_WHITE          "{FFFFFF}"
++#define EMBED_RED            "{7A2929}"
++#define EMBED_LSRP_WHITE     "{FFFFFF}"
++#define EMBED_LSRP_GRAY      "{BFC0C2}"
++#define EMBED_LSRP_DARKGRAY  "{858585}"
++#define EMBED_LSRP_BLUE      "{264A73}"
++#define EMBED_LSRP_RED       "{7A2929}"
++
++// Backward-compatible aliases for existing modules.
++#define EMBED_RP_LIGHT_GRAY  EMBED_LSRP_GRAY
++#define EMBED_RP_DARK_RED    EMBED_LSRP_RED
++#define EMBED_RP_DARK_BLUE   EMBED_LSRP_BLUE
+
+diff --git a/gamemodes/modules/core/player/stats.pwn b/gamemodes/modules/core/player/stats.pwn
+--- a/gamemodes/modules/core/player/stats.pwn
++++ b/gamemodes/modules/core/player/stats.pwn
+@@ -54,21 +54,21 @@
+         body,
+         sizeof(body),
+         "{00008B}THONG TIN NHAN VAT\n\n%sTen nhan vat: %s%s\n%sMa nhan vat: %s%d\n%sSlot nhan vat: %s%d\n%sGioi tinh: %s%s\n%sNgay sinh: %s%02d/%02d/%d\n%sTuoi: %s%d\n%sNoi sinh: %s%s\n%sGiong noi: %s%s\n%sMau da: %s%s\n%sChieu cao: %s%d cm\n%sCan nang: %s%d kg\n%sSkin: %s%d\n\n{00008B}TRANG THAI VA TAI SAN\n\n%sCap do: %s%d\n%sTien mat: %s$%d\n%sNgan hang: %s$%d\n%sMau: %s%.1f\n%sGiap: %s%.1f",
+-        EMBED_RP_LIGHT_GRAY, EMBED_RP_DARK_RED, s_CharacterName[playerid],
++        EMBED_RP_LIGHT_GRAY, EMBED_LSRP_BLUE, s_CharacterName[playerid],
+         EMBED_RP_LIGHT_GRAY, EMBED_RP_DARK_BLUE, s_CharacterID[playerid],
+         EMBED_RP_LIGHT_GRAY, EMBED_RP_DARK_BLUE, s_CharacterSlot[playerid],
+-        EMBED_RP_LIGHT_GRAY, EMBED_RP_DARK_RED, gender,
+-        EMBED_RP_LIGHT_GRAY, EMBED_RP_DARK_RED,
++        EMBED_RP_LIGHT_GRAY, EMBED_LSRP_WHITE, gender,
++        EMBED_RP_LIGHT_GRAY, EMBED_LSRP_WHITE,
+         s_CharacterBirthDay[playerid],
+         s_CharacterBirthMonth[playerid],
+         s_CharacterBirthYear[playerid],
+-        EMBED_RP_LIGHT_GRAY, EMBED_RP_DARK_RED, GetPlayerCharacterAge(playerid),
+-        EMBED_RP_LIGHT_GRAY, EMBED_RP_DARK_RED, birthPlace,
+-        EMBED_RP_LIGHT_GRAY, EMBED_RP_DARK_RED, voice,
+-        EMBED_RP_LIGHT_GRAY, EMBED_RP_DARK_RED, skinTone,
+-        EMBED_RP_LIGHT_GRAY, EMBED_RP_DARK_RED, s_CharacterHeight[playerid],
+-        EMBED_RP_LIGHT_GRAY, EMBED_RP_DARK_RED, s_CharacterWeight[playerid],
+-        EMBED_RP_LIGHT_GRAY, EMBED_RP_DARK_RED, GetPlayerSkin(playerid),
++        EMBED_RP_LIGHT_GRAY, EMBED_LSRP_WHITE, GetPlayerCharacterAge(playerid),
++        EMBED_RP_LIGHT_GRAY, EMBED_LSRP_WHITE, birthPlace,
++        EMBED_RP_LIGHT_GRAY, EMBED_LSRP_WHITE, voice,
++        EMBED_RP_LIGHT_GRAY, EMBED_LSRP_WHITE, skinTone,
++        EMBED_RP_LIGHT_GRAY, EMBED_LSRP_WHITE, s_CharacterHeight[playerid],
++        EMBED_RP_LIGHT_GRAY, EMBED_LSRP_WHITE, s_CharacterWeight[playerid],
++        EMBED_RP_LIGHT_GRAY, EMBED_LSRP_BLUE, GetPlayerSkin(playerid),
+         EMBED_RP_LIGHT_GRAY, EMBED_RP_DARK_BLUE, GetPlayerScore(playerid),
+         EMBED_RP_LIGHT_GRAY, EMBED_RP_DARK_BLUE, GetPlayerMoney(playerid),
+         EMBED_RP_LIGHT_GRAY, EMBED_RP_DARK_BLUE, s_CharacterBank[playerid],
+@@ -80,7 +80,7 @@
+         playerid,
+         DIALOG_CHARACTER_STATS,
+         DIALOG_STYLE_MSGBOX,
+-        "Thong tin nhan vat",
++        "{FFFFFF}Los Santos Roleplay - Thong tin nhan vat",
+         body,
+         "Dong",
+         ""

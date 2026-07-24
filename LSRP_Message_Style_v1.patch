@@ -1,0 +1,201 @@
+diff --git a/gamemodes/modules/utils/colors.pwn b/gamemodes/modules/utils/colors.pwn
+--- a/gamemodes/modules/utils/colors.pwn
++++ b/gamemodes/modules/utils/colors.pwn
+@@ -4,8 +4,12 @@
+ // Normal Colors
+ //-----------------------------------------------------------------------------
+
+ #define COLOR_WHITE (0xFFFFFFFF)
+-#define COLOR_RED   (0xFFDE97FF)
++#define COLOR_RED   (0x7A2929FF)
++#define COLOR_GRAY  (0xBFC0C2FF)
++#define COLOR_DARK_GRAY (0x858585FF)
++#define COLOR_LSRP_BLUE (0x264A73FF)
++#define COLOR_LSRP_RED  (0x7A2929FF)
+
+ //-----------------------------------------------------------------------------
+ // Roleplay chat colors
+@@ -23,7 +27,13 @@
+ //-----------------------------------------------------------------------------
+
+ #define EMBED_WHITE "{FFFFFF}"
+-#define EMBED_RED   "{FFDE97}"
+-#define EMBED_RP_LIGHT_GRAY "{D9D9D9}"
+-#define EMBED_RP_DARK_RED   "{8B0000}"
+-#define EMBED_RP_DARK_BLUE  "{00008B}"
++#define EMBED_RED   "{7A2929}"
++#define EMBED_LSRP_WHITE    "{FFFFFF}"
++#define EMBED_LSRP_GRAY     "{BFC0C2}"
++#define EMBED_LSRP_DARKGRAY "{858585}"
++#define EMBED_LSRP_BLUE     "{264A73}"
++#define EMBED_LSRP_RED      "{7A2929}"
++#define EMBED_RP_LIGHT_GRAY EMBED_LSRP_GRAY
++#define EMBED_RP_DARK_RED   EMBED_LSRP_RED
++#define EMBED_RP_DARK_BLUE  EMBED_LSRP_BLUE
+
+diff --git a/gamemodes/modules/system/job/pizza/core.pwn b/gamemodes/modules/system/job/pizza/core.pwn
+--- a/gamemodes/modules/system/job/pizza/core.pwn
++++ b/gamemodes/modules/system/job/pizza/core.pwn
+@@ -110,32 +110,32 @@ stock Pizza_StartDelivery(playerid)
+ {
+     if (!Pizza_IsEmployee(playerid))
+     {
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban chua phai nhan vien Pizza Stack.", 4000);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban chua duoc tuyen dung tai Pizza Stack. Hay noi chuyen voi quan ly tuyen dung truoc khi bat dau giao hang.", 5000);
+         return 0;
+     }
+
+     if (!Pizza_IsOnShift(playerid))
+     {
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Hay thue Pizzaboy va bat dau ca lam viec truoc.", 4500);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban chua bat dau ca lam viec. Hay thue mot chiec Pizzaboy tai cua hang truoc khi nhan don giao hang.", 5500);
+         return 0;
+     }
+
+     if (s_PizzaVehicleCargo[playerid] < 1)
+     {
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Pizzaboy khong co banh. Hay quay ve Pizza Stack de lay hang.", 4500);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Chiec Pizzaboy cua ban hien khong con hop pizza nao. Hay quay ve Pizza Stack de lay them hang truoc khi nhan don moi.", 5500);
+         return 0;
+     }
+
+     if (Pizza_IsCarryingBox(playerid))
+     {
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Hay cat hop pizza dang cam truoc khi nhan don.", 4000);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban dang cam mot hop pizza tren tay. Hay cat hop vao xe hoac hoan tat thao tac hien tai truoc khi nhan don moi.", 5000);
+         return 0;
+     }
+
+     if (s_PizzaDeliveryPoint[playerid] >= 0)
+     {
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban dang co mot don giao chua hoan tat.", 4000);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban dang co mot don giao hang chua hoan tat. Hay giao don hien tai truoc khi yeu cau mot dia chi moi.", 5000);
+         return 0;
+     }
+@@ -156,8 +156,8 @@ stock Pizza_StartDelivery(playerid)
+     );
+
+     new message[160];
+-    format(message, sizeof(message), "Don moi: %s. Den diem giao, xuong xe va nhan Y gan Pizzaboy de lay banh.", g_PizzaDeliveryPoints[point][PIZZA_DELIVERY_ZONE]);
+-    ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, message, 6500);
++    format(message, sizeof(message), "Ban da nhan mot don giao hang moi tai %s. Hay di den diem duoc danh dau, xuong xe va nhan Y gan Pizzaboy de lay hop pizza.", g_PizzaDeliveryPoints[point][PIZZA_DELIVERY_ZONE]);
++    ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, message, 7000);
+     return 1;
+ }
+@@ -165,34 +165,34 @@ stock Pizza_TakeStoreBox(playerid)
+ {
+     if (!Pizza_IsOnShift(playerid))
+     {
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban can thue Pizzaboy truoc khi nhan banh.", 4000);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban can thue mot chiec Pizzaboy va bat dau ca lam viec truoc khi co the lay pizza tu khu chuan bi.", 5000);
+         return 0;
+     }
+
+     if (GetPlayerState(playerid) != PLAYER_STATE_ONFOOT)
+     {
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Hay xuong xe de nhan hop pizza.", 3500);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban phai roi khoi phuong tien va dung tai khu lay hang de nhan mot hop pizza.", 4500);
+         return 0;
+     }
+
+     if (Pizza_IsCarryingBox(playerid))
+     {
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban dang cam mot hop pizza.", 3500);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban dang cam mot hop pizza tren tay. Hay chat hop hien tai len Pizzaboy truoc khi lay them.", 4500);
+         return 0;
+     }
+
+     if (s_PizzaVehicleCargo[playerid] >= PIZZA_MAX_CARGO)
+     {
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Pizzaboy da du 5/5 hop. Su dung /giaobanh de nhan don.", 5000);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Kho hang tren Pizzaboy da day 5/5 hop. Ban co the su dung /giaobanh de nhan mot dia chi giao hang.", 5500);
+         return 0;
+     }
+
+     if (!Pizza_IsRentalVehicleNear(playerid, PIZZA_BOX_PICKUP_X, PIZZA_BOX_PICKUP_Y, PIZZA_BOX_PICKUP_Z, PIZZA_STORE_VEHICLE_RANGE))
+     {
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Hay dua Pizzaboy lai gan khu lay banh truoc.", 4000);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Hay dua chiec Pizzaboy lai gan khu lay hang cua Pizza Stack truoc khi nhan them pizza.", 5000);
+         return 0;
+     }
+
+     Pizza_SetCarryState(playerid, PIZZA_CARRY_FROM_STORE);
+-    ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Da nhan mot hop pizza. Den gan Pizzaboy va nhan Y de chat len xe.", 5000);
++    ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban da nhan mot hop pizza tu cua hang. Hay mang no den gan Pizzaboy va nhan Y de chat hop len xe.", 5500);
+     return 1;
+ }
+@@ -215,16 +215,16 @@ stock Pizza_LoadCarriedBox(playerid)
+     s_PizzaVehicleCargo[playerid]++;
+
+     new message[128];
+-    format(message, sizeof(message), "Da chat banh len Pizzaboy: %d/%d hop.", s_PizzaVehicleCargo[playerid], PIZZA_MAX_CARGO);
+-    ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, message, 4000);
++    format(message, sizeof(message), "Ban da chat hop pizza len Pizzaboy. Kho hang hien co %d/%d hop va san sang cho cac don giao.", s_PizzaVehicleCargo[playerid], PIZZA_MAX_CARGO);
++    ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, message, 5000);
+
+     if (s_PizzaVehicleCargo[playerid] == 1)
+     {
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Da co 1 banh tren xe. Ban co the dung /giaobanh ngay hoac lay them.", 5000);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Pizzaboy hien co 1 hop pizza. Ban co the su dung /giaobanh de nhan don ngay, hoac tiep tuc lay them hang.", 5500);
+     }
+     else if (s_PizzaVehicleCargo[playerid] >= PIZZA_MAX_CARGO)
+     {
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Kho xe da day 5/5. Su dung /giaobanh de nhan dia chi giao.", 5500);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Kho hang tren Pizzaboy da day 5/5 hop. Su dung /giaobanh de nhan dia chi giao hang tiep theo.", 6000);
+     }
+     return 1;
+ }
+@@ -251,10 +251,10 @@ stock Pizza_TakeDeliveryBox(playerid)
+         g_PizzaDeliveryPoints[point][PIZZA_DELIVERY_Z]))
+     {
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Chi lay hop giao hang khi da den gan dia chi khach.", 4000);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban chi co the lay hop pizza giao cho khach khi da den gan dia chi duoc danh dau tren ban do.", 5000);
+         return 0;
+     }
+
+     Pizza_SetCarryState(playerid, PIZZA_CARRY_FOR_DELIVERY);
+-    ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Da lay hop giao hang. Mang den checkpoint va nhan Y.", 4500);
++    ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban da lay hop pizza can giao. Hay mang den diem giao duoc danh dau va nhan Y de ban giao cho khach.", 5500);
+     return 1;
+ }
+@@ -1,12 +1,12 @@
+ stock Pizza_PutDeliveryBoxBack(playerid)
+ {
+@@
+-    ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Da dat hop pizza tro lai Pizzaboy.", 3500);
++    ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban da dat hop pizza tro lai Pizzaboy. Don hang van duoc giu va co the tiep tuc khi ban lay hop ra lai.", 5000);
+@@
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Hay quay lai Pizzaboy, nhan Y de lay hop pizza giao cho khach.", 4500);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ban chua cam hop pizza cua don hang nay. Hay quay lai Pizzaboy, dung gan xe va nhan Y de lay hop giao cho khach.", 5500);
+@@
+-    format(message, sizeof(message), "Giao banh thanh cong +$%d. Con %d/%d hop tren xe.", PIZZA_DELIVERY_BASE_PAY, s_PizzaVehicleCargo[playerid], PIZZA_MAX_CARGO);
++    format(message, sizeof(message), "Ban da giao don hang thanh cong va nhan duoc $%d tien cong. Pizzaboy hien con %d/%d hop pizza.", PIZZA_DELIVERY_BASE_PAY, s_PizzaVehicleCargo[playerid], PIZZA_MAX_CARGO);
+@@
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Su dung /giaobanh de nhan don tiep theo.", 4000);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Tren xe van con pizza. Su dung /giaobanh khi ban san sang nhan dia chi giao hang tiep theo.", 5000);
+@@
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Xe da het banh. Quay ve lay them hoac dua xe den khu tra xe.", 5000);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Pizzaboy da het pizza. Hay quay ve Pizza Stack de lay them hang, hoac dua xe den khu tra xe neu ban muon ket thuc ca.", 6000);
+@@
+-        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Dang tai ho so cong viec. Hay nhan Y lai sau giay lat.", 4000);
++        ShowNotifyText(playerid, NOTIFY_TYPE_MODERN, "Ho so cong viec cua nhan vat dang duoc tai. Hay cho trong giay lat va nhan Y lai de tiep tuc.", 5000);
+
+diff --git a/gamemodes/README.md b/gamemodes/README.md
+--- a/gamemodes/README.md
++++ b/gamemodes/README.md
+@@ -1,3 +1,17 @@
++# LS:RP Message Style
++
++Quy uoc message chung:
++
++- Trang `#FFFFFF`: heading va noi dung can nhan manh.
++- Xam nhat `#BFC0C2`: noi dung he thong chinh.
++- Xam dam `#858585`: separator va thong tin phu.
++- Xanh navy `#264A73`: ten, ID, tien, command, vehicle va cac gia tri quan trong.
++- Do burgundy `#7A2929`: loi, canh bao va trang thai bat thuong.
++
++Message gameplay nen theo cau truc:
++`Hanh dong + doi tuong + ket qua + huong dan tiep theo (neu can)`.
++
++Khong tao README rieng trong tung module. Moi ghi chu gamemode duoc cap nhat tai file nay.
++

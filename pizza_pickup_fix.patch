@@ -1,0 +1,127 @@
+diff --git a/gamemodes/main.pwn b/gamemodes/main.pwn
+index dae1346..0000000 100644
+--- a/gamemodes/main.pwn
++++ b/gamemodes/main.pwn
+@@ -96,6 +96,7 @@
+ #include "modules/system/job/pizza/vehicle.pwn"
+ #include "modules/system/job/pizza/ui.pwn"
+ #include "modules/system/job/pizza/core.pwn"
++#include "modules/system/job/pizza/pickup_point.pwn"
+ #include "modules/system/job/pizza/commands.pwn"
+
+
+diff --git a/gamemodes/modules/system/job/pizza/pickup_point.pwn b/gamemodes/modules/system/job/pizza/pickup_point.pwn
+new file mode 100644
+--- /dev/null
++++ b/gamemodes/modules/system/job/pizza/pickup_point.pwn
+@@ -0,0 +1,110 @@
++//-----------------------------------------------------------------------------
++// Pizza job - visible store pickup guide
++//
++// The core pizza module already handles pressing Y to take a pizza box.
++// This module makes that interaction discoverable in-game by adding a clear
++// information pickup/3D label and a player checkpoint whenever an empty
++// Pizzaboy needs to return to the store for cargo.
++//-----------------------------------------------------------------------------
++
++#include <YSI_Coding\y_hooks>
++
++new
++    g_PizzaStoreGuidePickup = -1,
++    Text3D:g_PizzaStoreGuideLabel = Text3D:INVALID_3DTEXT_ID;
++
++stock Pizza_ShowStorePickupCheckpoint(playerid, bool:showMessage = true)
++{
++    if (!IsPlayerConnected(playerid))
++    {
++        return 0;
++    }
++
++    SetPlayerCheckpoint(
++        playerid,
++        PIZZA_BOX_PICKUP_X,
++        PIZZA_BOX_PICKUP_Y,
++        PIZZA_BOX_PICKUP_Z,
++        2.5
++    );
++
++    if (showMessage)
++    {
++        ShowNotifyText(
++            playerid,
++            NOTIFY_TYPE_MODERN,
++            "Diem lay banh da duoc danh dau. XUONG XE, den bieu tuong [i] va nhan Y de lay hop pizza.",
++            6500
++        );
++    }
++    return 1;
++}
++
++hook OnGameModeInit()
++{
++    // 1239 is deliberately used as the guide marker because the pizza-box
++    // object itself is small and easy to miss around the restaurant parking.
++    g_PizzaStoreGuidePickup = CreatePickup(
++        1239,
++        1,
++        PIZZA_BOX_PICKUP_X,
++        PIZZA_BOX_PICKUP_Y,
++        PIZZA_BOX_PICKUP_Z,
++        0
++    );
++
++    // Disable line-of-sight testing so the label is still discoverable when
++    // approaching the pickup from the parking side of the building.
++    g_PizzaStoreGuideLabel = Create3DTextLabel(
++        "{E53935}KHO PIZZA\n{FFFFFF}DIEM LAY BANH\n{FFD54F}Xuong xe + nhan Y de lay hop pizza",
++        COLOR_WHITE,
++        PIZZA_BOX_PICKUP_X,
++        PIZZA_BOX_PICKUP_Y,
++        PIZZA_BOX_PICKUP_Z + 0.9,
++        30.0,
++        0,
++        false
++    );
++    return 1;
++}
++
++hook OnGameModeExit()
++{
++    if (IsValidPickup(g_PizzaStoreGuidePickup))
++    {
++        DestroyPickup(g_PizzaStoreGuidePickup);
++    }
++
++    if (IsValid3DTextLabel(g_PizzaStoreGuideLabel))
++    {
++        Delete3DTextLabel(g_PizzaStoreGuideLabel);
++    }
++
++    g_PizzaStoreGuidePickup = -1;
++    g_PizzaStoreGuideLabel = Text3D:INVALID_3DTEXT_ID;
++    return 1;
++}
++
++hook OnPlayerStateChange(playerid, newstate, oldstate)
++{
++    #pragma unused oldstate
++
++    if (newstate != _:PLAYER_STATE_DRIVER ||
++        !Pizza_HasRentalVehicle(playerid) ||
++        GetPlayerVehicleID(playerid) != Pizza_GetRentalVehicle(playerid))
++    {
++        return 1;
++    }
++
++    // Do not replace an active delivery checkpoint, and do not interfere with
++    // the carry animation flow handled by vehicle.pwn/core.pwn.
++    if (s_PizzaDeliveryPoint[playerid] >= 0 ||
++        s_PizzaVehicleCargo[playerid] > 0 ||
++        Pizza_IsCarryingBox(playerid))
++    {
++        return 1;
++    }
++
++    Pizza_ShowStorePickupCheckpoint(playerid, true);
++    return 1;
++}
