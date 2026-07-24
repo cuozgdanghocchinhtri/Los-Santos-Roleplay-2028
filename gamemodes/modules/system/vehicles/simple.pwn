@@ -32,6 +32,55 @@
 #define DIALOG_SIMPLE_VEHICLE_ACTIONS (5102)
 #define SIMPLE_VEHICLE_DEFAULT_MODEL  (560)
 
+enum E_PLAYER_VEHICLE_DATA
+{
+    pvDatabaseID,
+    pvServerID,
+    pvModelID,
+    pvColor1,
+    pvColor2,
+    pvStorage,
+    pvLocked,
+    pvEngine,
+    pvTrunk,
+    Float:pvFuel,
+    Float:pvMileage,
+    Float:pvHealth,
+    Float:pvParkX,
+    Float:pvParkY,
+    Float:pvParkZ,
+    Float:pvParkA,
+    pvInterior,
+    pvVirtualWorld,
+    VEHICLE_PANEL_STATUS:pvPanels,
+    VEHICLE_DOOR_STATUS:pvDoors,
+    VEHICLE_LIGHT_STATUS:pvLights,
+    VEHICLE_TYRE_STATUS:pvTyres,
+    pvPlate[SIMPLE_VEHICLE_PLATE_LENGTH]
+};
+
+enum E_RUNTIME_VEHICLE_TYPE
+{
+    VEHICLE_TYPE_NONE = 0,
+    VEHICLE_TYPE_PLAYER,
+    VEHICLE_TYPE_JOB,
+    VEHICLE_TYPE_FACTION,
+    VEHICLE_TYPE_FAMILY,
+    VEHICLE_TYPE_ADMIN
+};
+
+enum E_RUNTIME_VEHICLE_DATA
+{
+    bool:vrExists,
+    E_RUNTIME_VEHICLE_TYPE:vrType,
+    vrSourceID,
+    vrSourceSlot,
+    vrDatabaseID
+};
+
+new PlayerVehicle[MAX_PLAYERS][SIMPLE_VEHICLE_MAX][E_PLAYER_VEHICLE_DATA];
+new VehicleRuntime[MAX_VEHICLES][E_RUNTIME_VEHICLE_DATA];
+
 new
     s_SimpleVehicleCount[MAX_PLAYERS],
     s_SimpleVehicleCharacterID[MAX_PLAYERS],
@@ -39,33 +88,8 @@ new
     s_SimpleVehicleSelectedSlot[MAX_PLAYERS],
     bool:s_SimpleVehiclesLoaded[MAX_PLAYERS],
     bool:s_SimpleVehiclesLoading[MAX_PLAYERS],
-    s_SimpleVehicleDatabaseID[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    s_SimpleVehicleServerID[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    s_SimpleVehicleModelID[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    s_SimpleVehicleColor1[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    s_SimpleVehicleColor2[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    s_SimpleVehicleStorage[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    s_SimpleVehicleLocked[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    s_SimpleVehicleEngine[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    s_SimpleVehicleTrunk[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    Float:s_SimpleVehicleFuel[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    Float:s_SimpleVehicleMileage[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    Float:s_SimpleVehicleHealth[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    Float:s_SimpleVehicleParkX[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    Float:s_SimpleVehicleParkY[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    Float:s_SimpleVehicleParkZ[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    Float:s_SimpleVehicleParkA[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    s_SimpleVehicleInterior[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    s_SimpleVehicleVirtualWorld[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    VEHICLE_PANEL_STATUS:s_SimpleVehiclePanels[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    VEHICLE_DOOR_STATUS:s_SimpleVehicleDoors[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    VEHICLE_LIGHT_STATUS:s_SimpleVehicleLights[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
-    VEHICLE_TYRE_STATUS:s_SimpleVehicleTyres[MAX_PLAYERS][SIMPLE_VEHICLE_MAX],
     s_SimpleVehicleGPSTimer[MAX_PLAYERS],
-    s_SimpleVehicleTimer,
-    s_SimpleVehiclePlate[MAX_PLAYERS][SIMPLE_VEHICLE_MAX][SIMPLE_VEHICLE_PLATE_LENGTH],
-    s_SimpleRuntimeOwner[MAX_VEHICLES] = {INVALID_PLAYER_ID, ...},
-    s_SimpleRuntimeSlot[MAX_VEHICLES] = {INVALID_SIMPLE_VEHICLE_SLOT, ...};
+    s_SimpleVehicleTimer;
 
 forward SimpleVehicle_LoadDeferred(playerid);
 forward SimpleVehicle_OnLoaded(playerid, characterID);
@@ -86,29 +110,29 @@ stock SimpleVehicle_Reset(playerid)
 
     for (new slot = 0; slot < SIMPLE_VEHICLE_MAX; slot++)
     {
-        s_SimpleVehicleDatabaseID[playerid][slot] = 0;
-        s_SimpleVehicleServerID[playerid][slot] = INVALID_VEHICLE_ID;
-        s_SimpleVehicleModelID[playerid][slot] = 0;
-        s_SimpleVehicleColor1[playerid][slot] = 1;
-        s_SimpleVehicleColor2[playerid][slot] = 1;
-        s_SimpleVehicleStorage[playerid][slot] = SIMPLE_VEHICLE_STORED;
-        s_SimpleVehicleLocked[playerid][slot] = 1;
-        s_SimpleVehicleEngine[playerid][slot] = 0;
-        s_SimpleVehicleTrunk[playerid][slot] = 0;
-        s_SimpleVehicleFuel[playerid][slot] = SIMPLE_VEHICLE_MAX_FUEL;
-        s_SimpleVehicleMileage[playerid][slot] = 0.0;
-        s_SimpleVehicleHealth[playerid][slot] = 1000.0;
-        s_SimpleVehicleParkX[playerid][slot] = GANTON_SPAWN_X;
-        s_SimpleVehicleParkY[playerid][slot] = GANTON_SPAWN_Y;
-        s_SimpleVehicleParkZ[playerid][slot] = GANTON_SPAWN_Z;
-        s_SimpleVehicleParkA[playerid][slot] = GANTON_SPAWN_A;
-        s_SimpleVehicleInterior[playerid][slot] = 0;
-        s_SimpleVehicleVirtualWorld[playerid][slot] = 0;
-        s_SimpleVehiclePanels[playerid][slot] = VEHICLE_PANEL_STATUS:0;
-        s_SimpleVehicleDoors[playerid][slot] = VEHICLE_DOOR_STATUS:0;
-        s_SimpleVehicleLights[playerid][slot] = VEHICLE_LIGHT_STATUS:0;
-        s_SimpleVehicleTyres[playerid][slot] = VEHICLE_TYRE_STATUS:0;
-        s_SimpleVehiclePlate[playerid][slot][0] = 0;
+        PlayerVehicle[playerid][slot][pvDatabaseID] = 0;
+        PlayerVehicle[playerid][slot][pvServerID] = INVALID_VEHICLE_ID;
+        PlayerVehicle[playerid][slot][pvModelID] = 0;
+        PlayerVehicle[playerid][slot][pvColor1] = 1;
+        PlayerVehicle[playerid][slot][pvColor2] = 1;
+        PlayerVehicle[playerid][slot][pvStorage] = SIMPLE_VEHICLE_STORED;
+        PlayerVehicle[playerid][slot][pvLocked] = 1;
+        PlayerVehicle[playerid][slot][pvEngine] = 0;
+        PlayerVehicle[playerid][slot][pvTrunk] = 0;
+        PlayerVehicle[playerid][slot][pvFuel] = SIMPLE_VEHICLE_MAX_FUEL;
+        PlayerVehicle[playerid][slot][pvMileage] = 0.0;
+        PlayerVehicle[playerid][slot][pvHealth] = 1000.0;
+        PlayerVehicle[playerid][slot][pvParkX] = GANTON_SPAWN_X;
+        PlayerVehicle[playerid][slot][pvParkY] = GANTON_SPAWN_Y;
+        PlayerVehicle[playerid][slot][pvParkZ] = GANTON_SPAWN_Z;
+        PlayerVehicle[playerid][slot][pvParkA] = GANTON_SPAWN_A;
+        PlayerVehicle[playerid][slot][pvInterior] = 0;
+        PlayerVehicle[playerid][slot][pvVirtualWorld] = 0;
+        PlayerVehicle[playerid][slot][pvPanels] = VEHICLE_PANEL_STATUS:0;
+        PlayerVehicle[playerid][slot][pvDoors] = VEHICLE_DOOR_STATUS:0;
+        PlayerVehicle[playerid][slot][pvLights] = VEHICLE_LIGHT_STATUS:0;
+        PlayerVehicle[playerid][slot][pvTyres] = VEHICLE_TYRE_STATUS:0;
+        PlayerVehicle[playerid][slot][pvPlate][0] = 0;
     }
     return 1;
 }
@@ -131,21 +155,153 @@ stock bool:SimpleVehicle_IsValidSlot(playerid, slot)
         s_SimpleVehiclesLoaded[playerid] &&
         slot >= 0 &&
         slot < s_SimpleVehicleCount[playerid] &&
-        s_SimpleVehicleDatabaseID[playerid][slot] > 0
+        PlayerVehicle[playerid][slot][pvDatabaseID] > 0
     );
+}
+
+
+stock VehicleRuntime_Reset(vehicleid)
+{
+    if (vehicleid < 0 || vehicleid >= MAX_VEHICLES)
+    {
+        return 0;
+    }
+
+    VehicleRuntime[vehicleid][vrExists] = false;
+    VehicleRuntime[vehicleid][vrType] = VEHICLE_TYPE_NONE;
+    VehicleRuntime[vehicleid][vrSourceID] = -1;
+    VehicleRuntime[vehicleid][vrSourceSlot] = INVALID_SIMPLE_VEHICLE_SLOT;
+    VehicleRuntime[vehicleid][vrDatabaseID] = 0;
+    return 1;
+}
+
+stock VehicleRuntime_Register(
+    vehicleid,
+    E_RUNTIME_VEHICLE_TYPE:type,
+    sourceID,
+    sourceSlot,
+    databaseID = 0
+)
+{
+    if (vehicleid <= 0 || vehicleid >= MAX_VEHICLES || !IsValidVehicle(vehicleid))
+    {
+        return 0;
+    }
+
+    VehicleRuntime[vehicleid][vrExists] = true;
+    VehicleRuntime[vehicleid][vrType] = type;
+    VehicleRuntime[vehicleid][vrSourceID] = sourceID;
+    VehicleRuntime[vehicleid][vrSourceSlot] = sourceSlot;
+    VehicleRuntime[vehicleid][vrDatabaseID] = databaseID;
+    return 1;
+}
+
+stock bool:VehicleRuntime_IsRegistered(vehicleid)
+{
+    return (
+        vehicleid > 0 &&
+        vehicleid < MAX_VEHICLES &&
+        VehicleRuntime[vehicleid][vrExists]
+    );
+}
+
+stock SimpleVehicle_FindPlayerByCharacter(characterID)
+{
+    if (characterID == INVALID_CHARACTER_ID)
+    {
+        return INVALID_PLAYER_ID;
+    }
+
+    for (new playerid = 0; playerid < MAX_PLAYERS; playerid++)
+    {
+        if (!IsPlayerConnected(playerid) ||
+            !s_SimpleVehiclesLoaded[playerid] ||
+            s_SimpleVehicleCharacterID[playerid] != characterID)
+        {
+            continue;
+        }
+        return playerid;
+    }
+    return INVALID_PLAYER_ID;
+}
+
+stock Float:PlayerVehicle_GetFuelBySource(characterID, slot)
+{
+    new const playerid = SimpleVehicle_FindPlayerByCharacter(characterID);
+    if (playerid == INVALID_PLAYER_ID || !SimpleVehicle_IsValidSlot(playerid, slot))
+    {
+        return 0.0;
+    }
+    return PlayerVehicle[playerid][slot][pvFuel];
+}
+
+stock PlayerVehicle_SetFuelBySource(characterID, slot, Float:amount)
+{
+    new const playerid = SimpleVehicle_FindPlayerByCharacter(characterID);
+    if (playerid == INVALID_PLAYER_ID || !SimpleVehicle_IsValidSlot(playerid, slot))
+    {
+        return 0;
+    }
+
+    if (amount < 0.0) amount = 0.0;
+    if (amount > SIMPLE_VEHICLE_MAX_FUEL) amount = SIMPLE_VEHICLE_MAX_FUEL;
+
+    PlayerVehicle[playerid][slot][pvFuel] = amount;
+    return 1;
+}
+
+stock Float:Vehicle_GetFuel(vehicleid)
+{
+    if (!VehicleRuntime_IsRegistered(vehicleid))
+    {
+        return 0.0;
+    }
+
+    switch (VehicleRuntime[vehicleid][vrType])
+    {
+        case VEHICLE_TYPE_PLAYER:
+        {
+            return PlayerVehicle_GetFuelBySource(
+                VehicleRuntime[vehicleid][vrSourceID],
+                VehicleRuntime[vehicleid][vrSourceSlot]
+            );
+        }
+    }
+    return 0.0;
+}
+
+stock Vehicle_SetFuel(vehicleid, Float:amount)
+{
+    if (!VehicleRuntime_IsRegistered(vehicleid))
+    {
+        return 0;
+    }
+
+    switch (VehicleRuntime[vehicleid][vrType])
+    {
+        case VEHICLE_TYPE_PLAYER:
+        {
+            return PlayerVehicle_SetFuelBySource(
+                VehicleRuntime[vehicleid][vrSourceID],
+                VehicleRuntime[vehicleid][vrSourceSlot],
+                amount
+            );
+        }
+    }
+    return 0;
 }
 
 stock SimpleVehicle_UpdateStorage(playerid, slot, storage)
 {
     if (slot < 0 ||
         slot >= SIMPLE_VEHICLE_MAX ||
-        s_SimpleVehicleDatabaseID[playerid][slot] <= 0 ||
+        PlayerVehicle[playerid][slot][pvDatabaseID] <= 0 ||
         s_SimpleVehicleCharacterID[playerid] == INVALID_CHARACTER_ID)
     {
         return 0;
     }
 
-    s_SimpleVehicleStorage[playerid][slot] = storage;
+    PlayerVehicle[playerid][slot][pvStorage] = storage;
 
     new query[384];
     mysql_format(
@@ -154,7 +310,7 @@ stock SimpleVehicle_UpdateStorage(playerid, slot, storage)
         sizeof(query),
         "UPDATE `player_vehicles` SET `storage_state` = %d WHERE `vehicle_id` = %d AND `owner_character_id` = %d AND `deleted_at` IS NULL",
         storage,
-        s_SimpleVehicleDatabaseID[playerid][slot],
+        PlayerVehicle[playerid][slot][pvDatabaseID],
         s_SimpleVehicleCharacterID[playerid]
     );
     mysql_tquery(g_DatabaseHandle, query);
@@ -182,19 +338,19 @@ stock SimpleVehicle_CaptureRuntime(playerid, slot)
         return 0;
     }
 
-    new const vehicleid = s_SimpleVehicleServerID[playerid][slot];
+    new const vehicleid = PlayerVehicle[playerid][slot][pvServerID];
     if (vehicleid == INVALID_VEHICLE_ID || !IsValidVehicle(vehicleid))
     {
         return 0;
     }
 
-    GetVehicleHealth(vehicleid, s_SimpleVehicleHealth[playerid][slot]);
+    GetVehicleHealth(vehicleid, PlayerVehicle[playerid][slot][pvHealth]);
     GetVehicleDamageStatus(
         vehicleid,
-        s_SimpleVehiclePanels[playerid][slot],
-        s_SimpleVehicleDoors[playerid][slot],
-        s_SimpleVehicleLights[playerid][slot],
-        s_SimpleVehicleTyres[playerid][slot]
+        PlayerVehicle[playerid][slot][pvPanels],
+        PlayerVehicle[playerid][slot][pvDoors],
+        PlayerVehicle[playerid][slot][pvLights],
+        PlayerVehicle[playerid][slot][pvTyres]
     );
 
     new engine, lights, alarm, doors, bonnet, boot, objective;
@@ -208,9 +364,9 @@ stock SimpleVehicle_CaptureRuntime(playerid, slot)
         boot,
         objective
     );
-    s_SimpleVehicleLocked[playerid][slot] = doors == 1;
-    s_SimpleVehicleEngine[playerid][slot] = engine == 1;
-    s_SimpleVehicleTrunk[playerid][slot] = boot == 1;
+    PlayerVehicle[playerid][slot][pvLocked] = doors == 1;
+    PlayerVehicle[playerid][slot][pvEngine] = engine == 1;
+    PlayerVehicle[playerid][slot][pvTrunk] = boot == 1;
     return 1;
 }
 
@@ -218,7 +374,7 @@ stock SimpleVehicle_SaveState(playerid, slot, bool:updatePark, storage)
 {
     if (slot < 0 ||
         slot >= SIMPLE_VEHICLE_MAX ||
-        s_SimpleVehicleDatabaseID[playerid][slot] <= 0 ||
+        PlayerVehicle[playerid][slot][pvDatabaseID] <= 0 ||
         s_SimpleVehicleCharacterID[playerid] == INVALID_CHARACTER_ID)
     {
         return 0;
@@ -227,25 +383,25 @@ stock SimpleVehicle_SaveState(playerid, slot, bool:updatePark, storage)
     SimpleVehicle_CaptureRuntime(playerid, slot);
 
     if (updatePark &&
-        s_SimpleVehicleServerID[playerid][slot] != INVALID_VEHICLE_ID &&
-        IsValidVehicle(s_SimpleVehicleServerID[playerid][slot]))
+        PlayerVehicle[playerid][slot][pvServerID] != INVALID_VEHICLE_ID &&
+        IsValidVehicle(PlayerVehicle[playerid][slot][pvServerID]))
     {
-        new const vehicleid = s_SimpleVehicleServerID[playerid][slot];
+        new const vehicleid = PlayerVehicle[playerid][slot][pvServerID];
         GetVehiclePos(
             vehicleid,
-            s_SimpleVehicleParkX[playerid][slot],
-            s_SimpleVehicleParkY[playerid][slot],
-            s_SimpleVehicleParkZ[playerid][slot]
+            PlayerVehicle[playerid][slot][pvParkX],
+            PlayerVehicle[playerid][slot][pvParkY],
+            PlayerVehicle[playerid][slot][pvParkZ]
         );
         GetVehicleZAngle(
             vehicleid,
-            s_SimpleVehicleParkA[playerid][slot]
+            PlayerVehicle[playerid][slot][pvParkA]
         );
-        s_SimpleVehicleInterior[playerid][slot] = GetVehicleInterior(vehicleid);
-        s_SimpleVehicleVirtualWorld[playerid][slot] = GetVehicleVirtualWorld(vehicleid);
+        PlayerVehicle[playerid][slot][pvInterior] = GetVehicleInterior(vehicleid);
+        PlayerVehicle[playerid][slot][pvVirtualWorld] = GetVehicleVirtualWorld(vehicleid);
     }
 
-    s_SimpleVehicleStorage[playerid][slot] = storage;
+    PlayerVehicle[playerid][slot][pvStorage] = storage;
 
     new query[1200];
     mysql_format(
@@ -253,22 +409,22 @@ stock SimpleVehicle_SaveState(playerid, slot, bool:updatePark, storage)
         query,
         sizeof(query),
         "UPDATE `player_vehicles` SET `park_x` = %f, `park_y` = %f, `park_z` = %f, `park_a` = %f, `interior_id` = %d, `virtual_world` = %d, `health` = %f, `fuel_liters` = %f, `panels_damage` = %d, `doors_damage` = %d, `lights_damage` = %d, `tyres_damage` = %d, `mileage_km` = %f, `storage_state` = %d, `is_locked` = %d WHERE `vehicle_id` = %d AND `owner_character_id` = %d AND `deleted_at` IS NULL",
-        s_SimpleVehicleParkX[playerid][slot],
-        s_SimpleVehicleParkY[playerid][slot],
-        s_SimpleVehicleParkZ[playerid][slot],
-        s_SimpleVehicleParkA[playerid][slot],
-        s_SimpleVehicleInterior[playerid][slot],
-        s_SimpleVehicleVirtualWorld[playerid][slot],
-        s_SimpleVehicleHealth[playerid][slot],
-        s_SimpleVehicleFuel[playerid][slot],
-        _:s_SimpleVehiclePanels[playerid][slot],
-        _:s_SimpleVehicleDoors[playerid][slot],
-        _:s_SimpleVehicleLights[playerid][slot],
-        _:s_SimpleVehicleTyres[playerid][slot],
-        s_SimpleVehicleMileage[playerid][slot],
+        PlayerVehicle[playerid][slot][pvParkX],
+        PlayerVehicle[playerid][slot][pvParkY],
+        PlayerVehicle[playerid][slot][pvParkZ],
+        PlayerVehicle[playerid][slot][pvParkA],
+        PlayerVehicle[playerid][slot][pvInterior],
+        PlayerVehicle[playerid][slot][pvVirtualWorld],
+        PlayerVehicle[playerid][slot][pvHealth],
+        PlayerVehicle[playerid][slot][pvFuel],
+        _:PlayerVehicle[playerid][slot][pvPanels],
+        _:PlayerVehicle[playerid][slot][pvDoors],
+        _:PlayerVehicle[playerid][slot][pvLights],
+        _:PlayerVehicle[playerid][slot][pvTyres],
+        PlayerVehicle[playerid][slot][pvMileage],
         storage,
-        s_SimpleVehicleLocked[playerid][slot],
-        s_SimpleVehicleDatabaseID[playerid][slot],
+        PlayerVehicle[playerid][slot][pvLocked],
+        PlayerVehicle[playerid][slot][pvDatabaseID],
         s_SimpleVehicleCharacterID[playerid]
     );
     mysql_tquery(g_DatabaseHandle, query);
@@ -282,7 +438,7 @@ stock SimpleVehicle_ToggleLock(playerid, slot)
         return 0;
     }
 
-    new const vehicleid = s_SimpleVehicleServerID[playerid][slot];
+    new const vehicleid = PlayerVehicle[playerid][slot][pvServerID];
     if (vehicleid == INVALID_VEHICLE_ID || !IsValidVehicle(vehicleid))
     {
         SendClientMessage(playerid, COLOR_RED, "Xe chua duoc lay ra.");
@@ -298,14 +454,14 @@ stock SimpleVehicle_ToggleLock(playerid, slot)
         return 0;
     }
 
-    s_SimpleVehicleLocked[playerid][slot] =
-        !s_SimpleVehicleLocked[playerid][slot];
+    PlayerVehicle[playerid][slot][pvLocked] =
+        !PlayerVehicle[playerid][slot][pvLocked];
     SetVehicleParamsEx(
         vehicleid,
         -1,
         -1,
         -1,
-        s_SimpleVehicleLocked[playerid][slot] ? 1 : 0,
+        PlayerVehicle[playerid][slot][pvLocked] ? 1 : 0,
         -1,
         -1,
         -1
@@ -314,13 +470,13 @@ stock SimpleVehicle_ToggleLock(playerid, slot)
         playerid,
         slot,
         false,
-        s_SimpleVehicleStorage[playerid][slot]
+        PlayerVehicle[playerid][slot][pvStorage]
     );
 
     SendClientMessage(
         playerid,
         COLOR_WHITE,
-        s_SimpleVehicleLocked[playerid][slot] ? "Da khoa xe." : "Da mo khoa xe."
+        PlayerVehicle[playerid][slot][pvLocked] ? "Da khoa xe." : "Da mo khoa xe."
     );
     return 1;
 }
@@ -332,7 +488,7 @@ stock SimpleVehicle_Park(playerid, slot)
         return 0;
     }
 
-    new const vehicleid = s_SimpleVehicleServerID[playerid][slot];
+    new const vehicleid = PlayerVehicle[playerid][slot][pvServerID];
     if (vehicleid == INVALID_VEHICLE_ID || !IsValidVehicle(vehicleid))
     {
         SendClientMessage(playerid, COLOR_RED, "Xe chua duoc lay ra.");
@@ -354,7 +510,7 @@ stock SimpleVehicle_Park(playerid, slot)
         playerid,
         slot,
         true,
-        s_SimpleVehicleStorage[playerid][slot]
+        PlayerVehicle[playerid][slot][pvStorage]
     );
     SendClientMessage(playerid, COLOR_WHITE, "Da luu vi tri do xe.");
     return 1;
@@ -367,7 +523,7 @@ stock SimpleVehicle_ToggleTrunk(playerid, slot)
         return 0;
     }
 
-    new const vehicleid = s_SimpleVehicleServerID[playerid][slot];
+    new const vehicleid = PlayerVehicle[playerid][slot][pvServerID];
     if (vehicleid == INVALID_VEHICLE_ID || !IsValidVehicle(vehicleid))
     {
         SendClientMessage(playerid, COLOR_RED, "Xe chua duoc lay ra.");
@@ -382,8 +538,8 @@ stock SimpleVehicle_ToggleTrunk(playerid, slot)
         return 0;
     }
 
-    s_SimpleVehicleTrunk[playerid][slot] =
-        !s_SimpleVehicleTrunk[playerid][slot];
+    PlayerVehicle[playerid][slot][pvTrunk] =
+        !PlayerVehicle[playerid][slot][pvTrunk];
     SetVehicleParamsEx(
         vehicleid,
         -1,
@@ -391,13 +547,13 @@ stock SimpleVehicle_ToggleTrunk(playerid, slot)
         -1,
         -1,
         -1,
-        s_SimpleVehicleTrunk[playerid][slot] ? 1 : 0,
+        PlayerVehicle[playerid][slot][pvTrunk] ? 1 : 0,
         -1
     );
     SendClientMessage(
         playerid,
         COLOR_WHITE,
-        s_SimpleVehicleTrunk[playerid][slot] ? "Da mo cop xe." : "Da dong cop xe."
+        PlayerVehicle[playerid][slot][pvTrunk] ? "Da mo cop xe." : "Da dong cop xe."
     );
     return 1;
 }
@@ -410,16 +566,16 @@ stock SimpleVehicle_ShowGPS(playerid, slot)
     }
 
     new Float:x, Float:y, Float:z;
-    new const vehicleid = s_SimpleVehicleServerID[playerid][slot];
+    new const vehicleid = PlayerVehicle[playerid][slot][pvServerID];
     if (vehicleid != INVALID_VEHICLE_ID && IsValidVehicle(vehicleid))
     {
         GetVehiclePos(vehicleid, x, y, z);
     }
     else
     {
-        x = s_SimpleVehicleParkX[playerid][slot];
-        y = s_SimpleVehicleParkY[playerid][slot];
-        z = s_SimpleVehicleParkZ[playerid][slot];
+        x = PlayerVehicle[playerid][slot][pvParkX];
+        y = PlayerVehicle[playerid][slot][pvParkY];
+        z = PlayerVehicle[playerid][slot][pvParkZ];
     }
 
     if (s_SimpleVehicleGPSTimer[playerid])
@@ -450,14 +606,13 @@ stock SimpleVehicle_ClearRuntimeLink(playerid, slot)
         return 0;
     }
 
-    new const vehicleid = s_SimpleVehicleServerID[playerid][slot];
+    new const vehicleid = PlayerVehicle[playerid][slot][pvServerID];
     if (vehicleid >= 1 && vehicleid < MAX_VEHICLES)
     {
-        s_SimpleRuntimeOwner[vehicleid] = INVALID_PLAYER_ID;
-        s_SimpleRuntimeSlot[vehicleid] = INVALID_SIMPLE_VEHICLE_SLOT;
+        VehicleRuntime_Reset(vehicleid);
     }
 
-    s_SimpleVehicleServerID[playerid][slot] = INVALID_VEHICLE_ID;
+    PlayerVehicle[playerid][slot][pvServerID] = INVALID_VEHICLE_ID;
     if (s_SimpleVehicleActiveSlot[playerid] == slot)
     {
         s_SimpleVehicleActiveSlot[playerid] = INVALID_SIMPLE_VEHICLE_SLOT;
@@ -467,21 +622,22 @@ stock SimpleVehicle_ClearRuntimeLink(playerid, slot)
 
 stock bool:SimpleVehicle_GetRuntimeOwner(vehicleid, &ownerid, &slot)
 {
-    if (vehicleid < 1 || vehicleid >= MAX_VEHICLES)
+    if (!VehicleRuntime_IsRegistered(vehicleid) ||
+        VehicleRuntime[vehicleid][vrType] != VEHICLE_TYPE_PLAYER)
     {
         return false;
     }
 
-    ownerid = s_SimpleRuntimeOwner[vehicleid];
-    slot = s_SimpleRuntimeSlot[vehicleid];
+    slot = VehicleRuntime[vehicleid][vrSourceSlot];
+    ownerid = SimpleVehicle_FindPlayerByCharacter(
+        VehicleRuntime[vehicleid][vrSourceID]
+    );
 
     return (
         ownerid != INVALID_PLAYER_ID &&
-        ownerid >= 0 &&
-        ownerid < MAX_PLAYERS &&
         slot >= 0 &&
         slot < SIMPLE_VEHICLE_MAX &&
-        s_SimpleVehicleServerID[ownerid][slot] == vehicleid
+        PlayerVehicle[ownerid][slot][pvServerID] == vehicleid
     );
 }
 
@@ -489,12 +645,12 @@ stock SimpleVehicle_Store(playerid, slot, bool:requireDistance, bool:notify)
 {
     if (slot < 0 ||
         slot >= SIMPLE_VEHICLE_MAX ||
-        s_SimpleVehicleDatabaseID[playerid][slot] <= 0)
+        PlayerVehicle[playerid][slot][pvDatabaseID] <= 0)
     {
         return 0;
     }
 
-    new const vehicleid = s_SimpleVehicleServerID[playerid][slot];
+    new const vehicleid = PlayerVehicle[playerid][slot][pvServerID];
     if (vehicleid == INVALID_VEHICLE_ID || !IsValidVehicle(vehicleid))
     {
         SimpleVehicle_ClearRuntimeLink(playerid, slot);
@@ -557,17 +713,17 @@ stock SimpleVehicle_Spawn(playerid, slot)
         return 0;
     }
 
-    if (s_SimpleVehicleStorage[playerid][slot] == SIMPLE_VEHICLE_IMPOUNDED)
+    if (PlayerVehicle[playerid][slot][pvStorage] == SIMPLE_VEHICLE_IMPOUNDED)
     {
         SendClientMessage(playerid, COLOR_RED, "Xe dang o bai tam giu.");
         return 0;
     }
-    if (s_SimpleVehicleStorage[playerid][slot] == SIMPLE_VEHICLE_DESTROYED)
+    if (PlayerVehicle[playerid][slot][pvStorage] == SIMPLE_VEHICLE_DESTROYED)
     {
         SendClientMessage(playerid, COLOR_RED, "Xe dang hu hong.");
         return 0;
     }
-    if (s_SimpleVehicleServerID[playerid][slot] != INVALID_VEHICLE_ID)
+    if (PlayerVehicle[playerid][slot][pvServerID] != INVALID_VEHICLE_ID)
     {
         SendClientMessage(playerid, COLOR_RED, "Xe nay dang o trong game.");
         return 0;
@@ -579,13 +735,13 @@ stock SimpleVehicle_Spawn(playerid, slot)
     }
 
     new const vehicleid = CreateVehicle(
-        s_SimpleVehicleModelID[playerid][slot],
-        s_SimpleVehicleParkX[playerid][slot],
-        s_SimpleVehicleParkY[playerid][slot],
-        s_SimpleVehicleParkZ[playerid][slot],
-        s_SimpleVehicleParkA[playerid][slot],
-        s_SimpleVehicleColor1[playerid][slot],
-        s_SimpleVehicleColor2[playerid][slot],
+        PlayerVehicle[playerid][slot][pvModelID],
+        PlayerVehicle[playerid][slot][pvParkX],
+        PlayerVehicle[playerid][slot][pvParkY],
+        PlayerVehicle[playerid][slot][pvParkZ],
+        PlayerVehicle[playerid][slot][pvParkA],
+        PlayerVehicle[playerid][slot][pvColor1],
+        PlayerVehicle[playerid][slot][pvColor2],
         -1
     );
     if (vehicleid == INVALID_VEHICLE_ID)
@@ -594,34 +750,41 @@ stock SimpleVehicle_Spawn(playerid, slot)
         return 0;
     }
 
-    LinkVehicleToInterior(vehicleid, s_SimpleVehicleInterior[playerid][slot]);
-    SetVehicleVirtualWorld(vehicleid, s_SimpleVehicleVirtualWorld[playerid][slot]);
-    SetVehicleNumberPlate(vehicleid, s_SimpleVehiclePlate[playerid][slot]);
-    SetVehicleHealth(vehicleid, s_SimpleVehicleHealth[playerid][slot]);
+    LinkVehicleToInterior(vehicleid, PlayerVehicle[playerid][slot][pvInterior]);
+    SetVehicleVirtualWorld(vehicleid, PlayerVehicle[playerid][slot][pvVirtualWorld]);
+    SetVehicleNumberPlate(vehicleid, PlayerVehicle[playerid][slot][pvPlate]);
+    SetVehicleHealth(vehicleid, PlayerVehicle[playerid][slot][pvHealth]);
     UpdateVehicleDamageStatus(
         vehicleid,
-        s_SimpleVehiclePanels[playerid][slot],
-        s_SimpleVehicleDoors[playerid][slot],
-        s_SimpleVehicleLights[playerid][slot],
-        s_SimpleVehicleTyres[playerid][slot]
+        PlayerVehicle[playerid][slot][pvPanels],
+        PlayerVehicle[playerid][slot][pvDoors],
+        PlayerVehicle[playerid][slot][pvLights],
+        PlayerVehicle[playerid][slot][pvTyres]
     );
     SetVehicleParamsEx(
         vehicleid,
         VEHICLE_PARAMS_OFF,
         VEHICLE_PARAMS_OFF,
         VEHICLE_PARAMS_OFF,
-        s_SimpleVehicleLocked[playerid][slot] ? VEHICLE_PARAMS_ON : VEHICLE_PARAMS_OFF,
+        PlayerVehicle[playerid][slot][pvLocked] ? VEHICLE_PARAMS_ON : VEHICLE_PARAMS_OFF,
         VEHICLE_PARAMS_OFF,
         VEHICLE_PARAMS_OFF,
         VEHICLE_PARAMS_OFF
     );
-    s_SimpleVehicleEngine[playerid][slot] = 0;
-    s_SimpleVehicleTrunk[playerid][slot] = 0;
+    PlayerVehicle[playerid][slot][pvEngine] = 0;
+    PlayerVehicle[playerid][slot][pvTrunk] = 0;
 
-    s_SimpleVehicleServerID[playerid][slot] = vehicleid;
+    PlayerVehicle[playerid][slot][pvServerID] = vehicleid;
     s_SimpleVehicleActiveSlot[playerid] = slot;
-    s_SimpleRuntimeOwner[vehicleid] = playerid;
-    s_SimpleRuntimeSlot[vehicleid] = slot;
+
+    VehicleRuntime_Register(
+        vehicleid,
+        VEHICLE_TYPE_PLAYER,
+        s_SimpleVehicleCharacterID[playerid],
+        slot,
+        PlayerVehicle[playerid][slot][pvDatabaseID]
+    );
+
     SimpleVehicle_UpdateStorage(playerid, slot, SIMPLE_VEHICLE_SPAWNED);
 
     SendClientMessage(playerid, COLOR_WHITE, "Da lay xe tai diem nhan xe Ganton.");
@@ -662,11 +825,11 @@ stock SimpleVehicle_Load(playerid)
 
     for (new slot = 0; slot < SIMPLE_VEHICLE_MAX; slot++)
     {
-        s_SimpleVehicleDatabaseID[playerid][slot] = 0;
-        s_SimpleVehicleServerID[playerid][slot] = INVALID_VEHICLE_ID;
-        s_SimpleVehicleModelID[playerid][slot] = 0;
-        s_SimpleVehicleStorage[playerid][slot] = SIMPLE_VEHICLE_STORED;
-        s_SimpleVehiclePlate[playerid][slot][0] = 0;
+        PlayerVehicle[playerid][slot][pvDatabaseID] = 0;
+        PlayerVehicle[playerid][slot][pvServerID] = INVALID_VEHICLE_ID;
+        PlayerVehicle[playerid][slot][pvModelID] = 0;
+        PlayerVehicle[playerid][slot][pvStorage] = SIMPLE_VEHICLE_STORED;
+        PlayerVehicle[playerid][slot][pvPlate][0] = 0;
     }
 
     new query[512];
@@ -725,104 +888,104 @@ public SimpleVehicle_OnLoaded(playerid, characterID)
         cache_get_value_name_int(
             row,
             "vehicle_id",
-            s_SimpleVehicleDatabaseID[playerid][row]
+            PlayerVehicle[playerid][row][pvDatabaseID]
         );
         cache_get_value_name_int(
             row,
             "model_id",
-            s_SimpleVehicleModelID[playerid][row]
+            PlayerVehicle[playerid][row][pvModelID]
         );
         cache_get_value_name_int(
             row,
             "color_1",
-            s_SimpleVehicleColor1[playerid][row]
+            PlayerVehicle[playerid][row][pvColor1]
         );
         cache_get_value_name_int(
             row,
             "color_2",
-            s_SimpleVehicleColor2[playerid][row]
+            PlayerVehicle[playerid][row][pvColor2]
         );
         cache_get_value_name(
             row,
             "plate",
-            s_SimpleVehiclePlate[playerid][row],
+            PlayerVehicle[playerid][row][pvPlate],
             SIMPLE_VEHICLE_PLATE_LENGTH
         );
         cache_get_value_name_float(
             row,
             "park_x",
-            s_SimpleVehicleParkX[playerid][row]
+            PlayerVehicle[playerid][row][pvParkX]
         );
         cache_get_value_name_float(
             row,
             "park_y",
-            s_SimpleVehicleParkY[playerid][row]
+            PlayerVehicle[playerid][row][pvParkY]
         );
         cache_get_value_name_float(
             row,
             "park_z",
-            s_SimpleVehicleParkZ[playerid][row]
+            PlayerVehicle[playerid][row][pvParkZ]
         );
         cache_get_value_name_float(
             row,
             "park_a",
-            s_SimpleVehicleParkA[playerid][row]
+            PlayerVehicle[playerid][row][pvParkA]
         );
         cache_get_value_name_int(
             row,
             "interior_id",
-            s_SimpleVehicleInterior[playerid][row]
+            PlayerVehicle[playerid][row][pvInterior]
         );
         cache_get_value_name_int(
             row,
             "virtual_world",
-            s_SimpleVehicleVirtualWorld[playerid][row]
+            PlayerVehicle[playerid][row][pvVirtualWorld]
         );
         cache_get_value_name_float(
             row,
             "health",
-            s_SimpleVehicleHealth[playerid][row]
+            PlayerVehicle[playerid][row][pvHealth]
         );
         cache_get_value_name_float(
             row,
             "fuel_liters",
-            s_SimpleVehicleFuel[playerid][row]
+            PlayerVehicle[playerid][row][pvFuel]
         );
         cache_get_value_name_int(row, "panels_damage", value);
-        s_SimpleVehiclePanels[playerid][row] = VEHICLE_PANEL_STATUS:value;
+        PlayerVehicle[playerid][row][pvPanels] = VEHICLE_PANEL_STATUS:value;
         cache_get_value_name_int(row, "doors_damage", value);
-        s_SimpleVehicleDoors[playerid][row] = VEHICLE_DOOR_STATUS:value;
+        PlayerVehicle[playerid][row][pvDoors] = VEHICLE_DOOR_STATUS:value;
         cache_get_value_name_int(row, "lights_damage", value);
-        s_SimpleVehicleLights[playerid][row] = VEHICLE_LIGHT_STATUS:value;
+        PlayerVehicle[playerid][row][pvLights] = VEHICLE_LIGHT_STATUS:value;
         cache_get_value_name_int(row, "tyres_damage", value);
-        s_SimpleVehicleTyres[playerid][row] = VEHICLE_TYRE_STATUS:value;
+        PlayerVehicle[playerid][row][pvTyres] = VEHICLE_TYRE_STATUS:value;
         cache_get_value_name_float(
             row,
             "mileage_km",
-            s_SimpleVehicleMileage[playerid][row]
+            PlayerVehicle[playerid][row][pvMileage]
         );
         cache_get_value_name_int(
             row,
             "storage_state",
-            s_SimpleVehicleStorage[playerid][row]
+            PlayerVehicle[playerid][row][pvStorage]
         );
         cache_get_value_name_int(
             row,
             "is_locked",
-            s_SimpleVehicleLocked[playerid][row]
+            PlayerVehicle[playerid][row][pvLocked]
         );
 
-        if (s_SimpleVehicleFuel[playerid][row] < 0.0)
+        if (PlayerVehicle[playerid][row][pvFuel] < 0.0)
         {
-            s_SimpleVehicleFuel[playerid][row] = 0.0;
+            PlayerVehicle[playerid][row][pvFuel] = 0.0;
         }
-        if (s_SimpleVehicleFuel[playerid][row] > SIMPLE_VEHICLE_MAX_FUEL)
+        if (PlayerVehicle[playerid][row][pvFuel] > SIMPLE_VEHICLE_MAX_FUEL)
         {
-            s_SimpleVehicleFuel[playerid][row] = SIMPLE_VEHICLE_MAX_FUEL;
+            PlayerVehicle[playerid][row][pvFuel] = SIMPLE_VEHICLE_MAX_FUEL;
         }
-        if (s_SimpleVehicleHealth[playerid][row] <= 0.0)
+        if (PlayerVehicle[playerid][row][pvHealth] <= 0.0)
         {
-            s_SimpleVehicleStorage[playerid][row] = SIMPLE_VEHICLE_DESTROYED;
+            PlayerVehicle[playerid][row][pvStorage] = SIMPLE_VEHICLE_DESTROYED;
             SimpleVehicle_UpdateStorage(
                 playerid,
                 row,
@@ -832,9 +995,9 @@ public SimpleVehicle_OnLoaded(playerid, characterID)
 
         // A runtime vehicle cannot survive a disconnect or server restart.
         // If the database still says "spawned", safely normalize it on load.
-        if (s_SimpleVehicleStorage[playerid][row] == SIMPLE_VEHICLE_SPAWNED)
+        if (PlayerVehicle[playerid][row][pvStorage] == SIMPLE_VEHICLE_SPAWNED)
         {
-            s_SimpleVehicleStorage[playerid][row] = SIMPLE_VEHICLE_STORED;
+            PlayerVehicle[playerid][row][pvStorage] = SIMPLE_VEHICLE_STORED;
             SimpleVehicle_UpdateStorage(
                 playerid,
                 row,
@@ -863,7 +1026,7 @@ stock SimpleVehicle_ToggleEngine(playerid, slot)
         return 0;
     }
 
-    new const vehicleid = s_SimpleVehicleServerID[playerid][slot];
+    new const vehicleid = PlayerVehicle[playerid][slot][pvServerID];
     if (vehicleid == INVALID_VEHICLE_ID ||
         !IsValidVehicle(vehicleid) ||
         GetPlayerState(playerid) != PLAYER_STATE_DRIVER ||
@@ -873,18 +1036,18 @@ stock SimpleVehicle_ToggleEngine(playerid, slot)
         return 0;
     }
 
-    if (!s_SimpleVehicleEngine[playerid][slot] &&
-        s_SimpleVehicleFuel[playerid][slot] <= 0.0)
+    if (!PlayerVehicle[playerid][slot][pvEngine] &&
+        PlayerVehicle[playerid][slot][pvFuel] <= 0.0)
     {
         SendClientMessage(playerid, COLOR_RED, "Xe da het xang.");
         return 0;
     }
 
-    s_SimpleVehicleEngine[playerid][slot] =
-        !s_SimpleVehicleEngine[playerid][slot];
+    PlayerVehicle[playerid][slot][pvEngine] =
+        !PlayerVehicle[playerid][slot][pvEngine];
     SetVehicleParamsEx(
         vehicleid,
-        s_SimpleVehicleEngine[playerid][slot] ? VEHICLE_PARAMS_ON : VEHICLE_PARAMS_OFF,
+        PlayerVehicle[playerid][slot][pvEngine] ? VEHICLE_PARAMS_ON : VEHICLE_PARAMS_OFF,
         -1,
         -1,
         -1,
@@ -896,13 +1059,13 @@ stock SimpleVehicle_ToggleEngine(playerid, slot)
         playerid,
         slot,
         false,
-        s_SimpleVehicleStorage[playerid][slot]
+        PlayerVehicle[playerid][slot][pvStorage]
     );
 
     SendClientMessage(
         playerid,
         COLOR_WHITE,
-        s_SimpleVehicleEngine[playerid][slot] ? "Da khoi dong xe." : "Da tat dong co."
+        PlayerVehicle[playerid][slot][pvEngine] ? "Da khoi dong xe." : "Da tat dong co."
     );
     return 1;
 }
@@ -911,15 +1074,15 @@ stock SimpleVehicle_MarkDestroyed(playerid, slot)
 {
     if (slot < 0 ||
         slot >= SIMPLE_VEHICLE_MAX ||
-        s_SimpleVehicleDatabaseID[playerid][slot] <= 0)
+        PlayerVehicle[playerid][slot][pvDatabaseID] <= 0)
     {
         return 0;
     }
 
-    new const vehicleid = s_SimpleVehicleServerID[playerid][slot];
-    s_SimpleVehicleHealth[playerid][slot] = 0.0;
-    s_SimpleVehicleEngine[playerid][slot] = 0;
-    s_SimpleVehicleStorage[playerid][slot] = SIMPLE_VEHICLE_DESTROYED;
+    new const vehicleid = PlayerVehicle[playerid][slot][pvServerID];
+    PlayerVehicle[playerid][slot][pvHealth] = 0.0;
+    PlayerVehicle[playerid][slot][pvEngine] = 0;
+    PlayerVehicle[playerid][slot][pvStorage] = SIMPLE_VEHICLE_DESTROYED;
     SimpleVehicle_SaveState(
         playerid,
         slot,
@@ -947,7 +1110,7 @@ public SimpleVehicle_RuntimeTick()
         }
 
         new const slot = s_SimpleVehicleActiveSlot[playerid];
-        new const vehicleid = s_SimpleVehicleServerID[playerid][slot];
+        new const vehicleid = PlayerVehicle[playerid][slot][pvServerID];
         if (vehicleid == INVALID_VEHICLE_ID || !IsValidVehicle(vehicleid))
         {
             SimpleVehicle_ClearRuntimeLink(playerid, slot);
@@ -956,30 +1119,30 @@ public SimpleVehicle_RuntimeTick()
         }
 
         SimpleVehicle_CaptureRuntime(playerid, slot);
-        if (s_SimpleVehicleHealth[playerid][slot] <= 0.0)
+        if (PlayerVehicle[playerid][slot][pvHealth] <= 0.0)
         {
             SimpleVehicle_MarkDestroyed(playerid, slot);
             SendClientMessage(playerid, COLOR_RED, "Xe da bi pha huy va chuyen sang trang thai hu hong.");
             continue;
         }
 
-        if (s_SimpleVehicleEngine[playerid][slot] &&
+        if (PlayerVehicle[playerid][slot][pvEngine] &&
             GetPlayerState(playerid) == PLAYER_STATE_DRIVER &&
             GetPlayerVehicleID(playerid) == vehicleid)
         {
             new const speed = Vehicle_Speed(vehicleid);
             if (speed > 0)
             {
-                s_SimpleVehicleFuel[playerid][slot] -=
+                PlayerVehicle[playerid][slot][pvFuel] -=
                     (Float:speed * 5.0 / 3600.0 * 0.35);
-                s_SimpleVehicleMileage[playerid][slot] +=
+                PlayerVehicle[playerid][slot][pvMileage] +=
                     (Float:speed * 5.0 / 3600.0);
             }
 
-            if (s_SimpleVehicleFuel[playerid][slot] <= 0.0)
+            if (PlayerVehicle[playerid][slot][pvFuel] <= 0.0)
             {
-                s_SimpleVehicleFuel[playerid][slot] = 0.0;
-                s_SimpleVehicleEngine[playerid][slot] = 0;
+                PlayerVehicle[playerid][slot][pvFuel] = 0.0;
+                PlayerVehicle[playerid][slot][pvEngine] = 0;
                 SetVehicleParamsEx(
                     vehicleid,
                     VEHICLE_PARAMS_OFF,
@@ -1047,12 +1210,12 @@ stock SimpleVehicle_ShowList(playerid)
         for (new slot = 0; slot < s_SimpleVehicleCount[playerid]; slot++)
         {
             SimpleVehicle_GetModelName(
-                s_SimpleVehicleModelID[playerid][slot],
+                PlayerVehicle[playerid][slot][pvModelID],
                 modelName,
                 sizeof(modelName)
             );
             SimpleVehicle_GetStorageName(
-                s_SimpleVehicleStorage[playerid][slot],
+                PlayerVehicle[playerid][slot][pvStorage],
                 storage,
                 sizeof(storage)
             );
@@ -1062,7 +1225,7 @@ stock SimpleVehicle_ShowList(playerid)
                 "%d\t%s\t%s\t%s\n",
                 slot + 1,
                 modelName,
-                s_SimpleVehiclePlate[playerid][slot],
+                PlayerVehicle[playerid][slot][pvPlate],
                 storage
             );
             strcat(body, row, sizeof(body));
@@ -1092,7 +1255,7 @@ stock SimpleVehicle_ShowActions(playerid, slot)
 
     new modelName[32];
     SimpleVehicle_GetModelName(
-        s_SimpleVehicleModelID[playerid][slot],
+        PlayerVehicle[playerid][slot][pvModelID],
         modelName,
         sizeof(modelName)
     );
@@ -1103,7 +1266,7 @@ stock SimpleVehicle_ShowActions(playerid, slot)
         sizeof(title),
         "%s - %s",
         modelName,
-        s_SimpleVehiclePlate[playerid][slot]
+        PlayerVehicle[playerid][slot][pvPlate]
     );
 
     ShowPlayerDialog(
@@ -1133,12 +1296,12 @@ stock SimpleVehicle_ShowInfo(playerid, slot)
     new body[1024];
 
     SimpleVehicle_GetModelName(
-        s_SimpleVehicleModelID[playerid][slot],
+        PlayerVehicle[playerid][slot][pvModelID],
         modelName,
         sizeof(modelName)
     );
     SimpleVehicle_GetStorageName(
-        s_SimpleVehicleStorage[playerid][slot],
+        PlayerVehicle[playerid][slot][pvStorage],
         storage,
         sizeof(storage)
     );
@@ -1146,44 +1309,44 @@ stock SimpleVehicle_ShowInfo(playerid, slot)
         locked,
         sizeof(locked),
         "%s",
-        s_SimpleVehicleLocked[playerid][slot] ? "Da khoa" : "Da mo"
+        PlayerVehicle[playerid][slot][pvLocked] ? "Da khoa" : "Da mo"
     );
     format(
         engine,
         sizeof(engine),
         "%s",
-        s_SimpleVehicleEngine[playerid][slot] ? "Dang chay" : "Tat"
+        PlayerVehicle[playerid][slot][pvEngine] ? "Dang chay" : "Tat"
     );
     format(
         trunk,
         sizeof(trunk),
         "%s",
-        s_SimpleVehicleTrunk[playerid][slot] ? "Dang mo" : "Dong"
+        PlayerVehicle[playerid][slot][pvTrunk] ? "Dang mo" : "Dong"
     );
     format(
         body,
         sizeof(body),
         "Xe: %s (model %d)\nDatabase ID: %d\nBien so: %s\nTrang thai: %s\nMau: %d/%d\nHP: %.0f/1000\nXang: %.1f/100.0 L\nQuang duong: %.1f km\nKhoa: %s\nDong co: %s\nCop: %s\nDamage: P%d D%d L%d T%d\nVi tri do: %.1f, %.1f, %.1f",
         modelName,
-        s_SimpleVehicleModelID[playerid][slot],
-        s_SimpleVehicleDatabaseID[playerid][slot],
-        s_SimpleVehiclePlate[playerid][slot],
+        PlayerVehicle[playerid][slot][pvModelID],
+        PlayerVehicle[playerid][slot][pvDatabaseID],
+        PlayerVehicle[playerid][slot][pvPlate],
         storage,
-        s_SimpleVehicleColor1[playerid][slot],
-        s_SimpleVehicleColor2[playerid][slot],
-        s_SimpleVehicleHealth[playerid][slot],
-        s_SimpleVehicleFuel[playerid][slot],
-        s_SimpleVehicleMileage[playerid][slot],
+        PlayerVehicle[playerid][slot][pvColor1],
+        PlayerVehicle[playerid][slot][pvColor2],
+        PlayerVehicle[playerid][slot][pvHealth],
+        PlayerVehicle[playerid][slot][pvFuel],
+        PlayerVehicle[playerid][slot][pvMileage],
         locked,
         engine,
         trunk,
-        _:s_SimpleVehiclePanels[playerid][slot],
-        _:s_SimpleVehicleDoors[playerid][slot],
-        _:s_SimpleVehicleLights[playerid][slot],
-        _:s_SimpleVehicleTyres[playerid][slot],
-        s_SimpleVehicleParkX[playerid][slot],
-        s_SimpleVehicleParkY[playerid][slot],
-        s_SimpleVehicleParkZ[playerid][slot]
+        _:PlayerVehicle[playerid][slot][pvPanels],
+        _:PlayerVehicle[playerid][slot][pvDoors],
+        _:PlayerVehicle[playerid][slot][pvLights],
+        _:PlayerVehicle[playerid][slot][pvTyres],
+        PlayerVehicle[playerid][slot][pvParkX],
+        PlayerVehicle[playerid][slot][pvParkY],
+        PlayerVehicle[playerid][slot][pvParkZ]
     );
 
     ShowPlayerDialog(
@@ -1383,8 +1546,7 @@ hook OnGameModeInit()
 {
     for (new vehicleid = 0; vehicleid < MAX_VEHICLES; vehicleid++)
     {
-        s_SimpleRuntimeOwner[vehicleid] = INVALID_PLAYER_ID;
-        s_SimpleRuntimeSlot[vehicleid] = INVALID_SIMPLE_VEHICLE_SLOT;
+        VehicleRuntime_Reset(vehicleid);
     }
     for (new playerid = 0; playerid < MAX_PLAYERS; playerid++)
     {

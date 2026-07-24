@@ -1,0 +1,568 @@
+--- a/gamemodes/modules/system/vehicles/dealership.pwn
++++ b/gamemodes/modules/system/vehicles/dealership.pwn
+@@ -23,7 +23,7 @@
+ #define DEALERSHIP_VEHICLE_COUNT       (5)
+ 
+ // Số màu preset cho Color Picker cách 1.
+-#define DEALERSHIP_COLOR_COUNT         (12)
++#define DEALERSHIP_COLOR_COUNT         (20)
+ 
+ // Virtual world riêng của showroom.
+ // Mỗi player được cộng playerid để không nhìn thấy preview vehicle của nhau.
+@@ -99,39 +99,61 @@
+ };
+ 
+ // GTA vehicle color IDs dùng cho Color Picker preset.
+-// Player click một ô màu thì preview vehicle đổi màu ngay.
++// Palette V4 dùng 20 màu, hiển thị theo grid 5 cột x 4 hàng.
+ new const g_DealershipVehicleColors[DEALERSHIP_COLOR_COUNT] =
+ {
+     1,      // Black
+     0,      // White
++    25,     // Silver
+     6,      // Yellow
++    36,     // Orange
++
+     3,      // Red
+     79,     // Dark red
++    126,    // Cyan
++    86,     // Light blue
+     7,      // Blue
+-    86,     // Light blue
++
+     16,     // Green
+-    126,    // Cyan
++    53,     // Dark green
+     135,    // Purple
+-    36,     // Orange
+-    25      // Silver / gray
++    147,    // Pink
++    103,    // Brown
++
++    92,     // Beige
++    101,    // Gold
++    63,     // Dark gray
++    93,     // Light gray
++    151     // Bright cyan
+ };
+ 
+-// Màu TextDraw tương ứng để hiển thị palette trên UI.
+-// Đây chỉ là màu giao diện, vehicle vẫn dùng GTA color ID phía trên.
++// Màu TextDraw tương ứng để người chơi nhìn thấy palette.
++// Đây chỉ là màu UI; vehicle vẫn dùng GTA color ID phía trên.
+ new const g_DealershipUIColor[DEALERSHIP_COLOR_COUNT] =
+ {
+     0x111111FF,
+-    0xF1F1F1FF,
+-    0xE6C229FF,
+-    0xD93A3AFF,
+-    0x7A2929FF,
+-    0x315FD6FF,
+-    0x48A7E8FF,
+-    0x47A447FF,
+-    0x26C6C9FF,
+-    0xA841D6FF,
+-    0xE37B2DFF,
+-    0x8E9296FF
++    0xF4F4F4FF,
++    0xA5A7AAFF,
++    0xE8C82AFF,
++    0xE77A28FF,
++
++    0xE33D3DFF,
++    0x842D2DFF,
++    0x2EC9CBFF,
++    0x4CA7DEFF,
++    0x365FD1FF,
++
++    0x49AA4CFF,
++    0x246A39FF,
++    0x9E43C9FF,
++    0xE066A6FF,
++    0x81563CFF,
++
++    0xD2C2A2FF,
++    0xC5A03AFF,
++    0x55585CFF,
++    0xC5C8CBFF,
++    0x34D9E2FF
+ };
+ 
+ //-----------------------------------------------------------------------------
+@@ -164,6 +186,14 @@
+ 
+ // Virtual world của player trước khi vào showroom.
+ new g_DealershipReturnWorld[MAX_PLAYERS];
++
++// Timer đang dùng cho cinematic camera sweep của showroom.
++// Timer này chỉ sống trong lúc player đang ở dealership.
++new g_DealershipCameraTimer[MAX_PLAYERS];
++
++// Stage hiện tại của camera sweep.
++// 0 = idle, 1 = đang lia sang góc đối diện, 2 = đang quay về góc mặc định.
++new g_DealershipCameraStage[MAX_PLAYERS];
+ 
+ //-----------------------------------------------------------------------------
+ // PlayerTextDraw Handles
+@@ -237,6 +267,7 @@
+ forward Dealership_DestroyUI(playerid);
+ forward Dealership_ShowUI(playerid);
+ forward Dealership_HideUI(playerid);
++forward Dealership_CameraSweepStage(playerid);
+ 
+ //-----------------------------------------------------------------------------
+ // Utility
+@@ -304,16 +335,116 @@
+     return 1;
+ }
+ 
++
++// Hủy camera timer cũ để không có nhiều cinematic chạy chồng lên nhau.
++stock Dealership_StopCameraSweep(playerid)
++{
++    if (g_DealershipCameraTimer[playerid])
++    {
++        KillTimer(g_DealershipCameraTimer[playerid]);
++        g_DealershipCameraTimer[playerid] = 0;
++    }
++
++    g_DealershipCameraStage[playerid] = 0;
++    return 1;
++}
++
++// Lia camera quanh preview vehicle theo hai nhịp.
++// Nhịp 1 đi từ góc showroom hiện tại sang góc 3/4 đối diện.
++// Nhịp 2 tự động quay về camera mặc định.
++stock Dealership_StartCameraSweep(playerid)
++{
++    if (!g_DealershipActive[playerid])
++    {
++        return 0;
++    }
++
++    Dealership_StopCameraSweep(playerid);
++
++    g_DealershipCameraStage[playerid] = 1;
++
++    // Lia camera sang phía đối diện của vehicle.
++    InterpolateCameraPos(
++        playerid,
++        DEALERSHIP_CAMERA_X,
++        DEALERSHIP_CAMERA_Y,
++        DEALERSHIP_CAMERA_Z,
++        2127.20,
++        -1155.10,
++        26.70,
++        850,
++        CAMERA_MOVE
++    );
++
++    // Giữ camera luôn tập trung vào vehicle trong lúc lia.
++    InterpolateCameraLookAt(
++        playerid,
++        DEALERSHIP_LOOK_X,
++        DEALERSHIP_LOOK_Y,
++        DEALERSHIP_LOOK_Z,
++        DEALERSHIP_LOOK_X,
++        DEALERSHIP_LOOK_Y,
++        DEALERSHIP_LOOK_Z,
++        850,
++        CAMERA_MOVE
++    );
++
++    g_DealershipCameraTimer[playerid] =
++        SetTimerEx("Dealership_CameraSweepStage", 900, false, "d", playerid);
++
++    return 1;
++}
++
++// Chạy stage thứ hai của cinematic camera sweep.
++public Dealership_CameraSweepStage(playerid)
++{
++    g_DealershipCameraTimer[playerid] = 0;
++
++    if (!IsPlayerConnected(playerid) ||
++        !g_DealershipActive[playerid])
++    {
++        return 1;
++    }
++
++    // Quay camera từ góc đối diện về góc showroom mặc định.
++    InterpolateCameraPos(
++        playerid,
++        2127.20,
++        -1155.10,
++        26.70,
++        DEALERSHIP_CAMERA_X,
++        DEALERSHIP_CAMERA_Y,
++        DEALERSHIP_CAMERA_Z,
++        850,
++        CAMERA_MOVE
++    );
++
++    InterpolateCameraLookAt(
++        playerid,
++        DEALERSHIP_LOOK_X,
++        DEALERSHIP_LOOK_Y,
++        DEALERSHIP_LOOK_Z,
++        DEALERSHIP_LOOK_X,
++        DEALERSHIP_LOOK_Y,
++        DEALERSHIP_LOOK_Z,
++        850,
++        CAMERA_MOVE
++    );
++
++    g_DealershipCameraStage[playerid] = 2;
++    return 1;
++}
++
+ //-----------------------------------------------------------------------------
+ // UI Creation
+ //-----------------------------------------------------------------------------
+ 
+ // Tạo toàn bộ PlayerTextDraw của showroom cho một player.
+-// Layout V3:
+-// - panel thông tin + Color Picker bên trái;
+-// - vehicle preview thật ở giữa;
+-// - tên/giá/Test Drive/Buy ở giữa dưới;
+-// - danh sách xe click trực tiếp ở bên phải.
++// Layout V4:
++// - thông tin bên trái được nén gọn để dành chỗ cho 20 màu;
++// - Color Picker 5 cột x 4 hàng;
++// - mọi selectable TextDraw có clickable bounds riêng;
++// - navigation/Test Drive/Buy không còn vùng click đè lên nhau.
+ public Dealership_CreateUI(playerid)
+ {
+     // Panel thông tin trái.
+@@ -321,66 +452,72 @@
+     PlayerTextDrawUseBox(playerid, g_DealerTDPanel[playerid], true);
+     PlayerTextDrawBoxColor(playerid, g_DealerTDPanel[playerid], 0x101317D8);
+     PlayerTextDrawTextSize(playerid, g_DealerTDPanel[playerid], 180.0, 0.0);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDPanel[playerid], 0.0, 25.0);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDPanel[playerid], 0.0, 24.5);
+ 
+     // Panel danh sách xe bên phải.
+     g_DealerTDListPanel[playerid] = CreatePlayerTextDraw(playerid, 469.0, 76.0, "_");
+     PlayerTextDrawUseBox(playerid, g_DealerTDListPanel[playerid], true);
+     PlayerTextDrawBoxColor(playerid, g_DealerTDListPanel[playerid], 0x101317D8);
+     PlayerTextDrawTextSize(playerid, g_DealerTDListPanel[playerid], 628.0, 0.0);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDListPanel[playerid], 0.0, 25.0);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDListPanel[playerid], 0.0, 24.5);
+ 
+     // Header dealership.
+     g_DealerTDHeader[playerid] = CreatePlayerTextDraw(playerid, 25.0, 86.0, "JEFFERSON MOTORS");
+     PlayerTextDrawFont(playerid, g_DealerTDHeader[playerid], TEXT_DRAW_FONT_2);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDHeader[playerid], 0.30, 1.10);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDHeader[playerid], 0.30, 1.05);
+     PlayerTextDrawColor(playerid, g_DealerTDHeader[playerid], 0x3ED7E6FF);
++    PlayerTextDrawSetShadow(playerid, g_DealerTDHeader[playerid], 0);
+ 
+     // Counter.
+     g_DealerTDCounter[playerid] = CreatePlayerTextDraw(playerid, 169.0, 87.0, "01 / 05");
+     PlayerTextDrawAlignment(playerid, g_DealerTDCounter[playerid], TEXT_DRAW_ALIGN_RIGHT);
+     PlayerTextDrawFont(playerid, g_DealerTDCounter[playerid], TEXT_DRAW_FONT_1);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDCounter[playerid], 0.18, 0.84);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDCounter[playerid], 0.17, 0.80);
+     PlayerTextDrawColor(playerid, g_DealerTDCounter[playerid], 0x858585FF);
++    PlayerTextDrawSetShadow(playerid, g_DealerTDCounter[playerid], 0);
+ 
+     // Category bên trái.
+-    g_DealerTDCategory[playerid] = CreatePlayerTextDraw(playerid, 25.0, 111.0, "Sports Sedan");
++    g_DealerTDCategory[playerid] = CreatePlayerTextDraw(playerid, 25.0, 108.0, "Sports Sedan");
+     PlayerTextDrawFont(playerid, g_DealerTDCategory[playerid], TEXT_DRAW_FONT_2);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDCategory[playerid], 0.23, 0.95);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDCategory[playerid], 0.22, 0.90);
+     PlayerTextDrawColor(playerid, g_DealerTDCategory[playerid], 0xFFFFFFFF);
+-
+-    // Stats bên trái.
++    PlayerTextDrawSetShadow(playerid, g_DealerTDCategory[playerid], 0);
++
++    // Stats bên trái, line spacing nhỏ hơn bản V3.
+     g_DealerTDStats[playerid] = CreatePlayerTextDraw(
+         playerid,
+         25.0,
+-        137.0,
+-        "FUEL        65 L~n~POWER       8/10~n~HANDLING    8/10"
++        131.0,
++        "FUEL      65 L~n~POWER     8/10~n~HANDLING  8/10"
+     );
+     PlayerTextDrawFont(playerid, g_DealerTDStats[playerid], TEXT_DRAW_FONT_1);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDStats[playerid], 0.19, 0.90);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDStats[playerid], 0.18, 0.76);
+     PlayerTextDrawColor(playerid, g_DealerTDStats[playerid], 0xBFC0C2FF);
++    PlayerTextDrawSetShadow(playerid, g_DealerTDStats[playerid], 0);
+ 
+     // Color Picker title.
+-    g_DealerTDColorTitle[playerid] = CreatePlayerTextDraw(playerid, 25.0, 196.0, "CHOOSE COLOR");
++    g_DealerTDColorTitle[playerid] = CreatePlayerTextDraw(playerid, 25.0, 178.0, "CHOOSE COLOR");
+     PlayerTextDrawFont(playerid, g_DealerTDColorTitle[playerid], TEXT_DRAW_FONT_2);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDColorTitle[playerid], 0.23, 0.95);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDColorTitle[playerid], 0.22, 0.90);
+     PlayerTextDrawColor(playerid, g_DealerTDColorTitle[playerid], 0xFFFFFFFF);
++    PlayerTextDrawSetShadow(playerid, g_DealerTDColorTitle[playerid], 0);
+ 
+     // Color Picker selected label.
+-    g_DealerTDColorSelected[playerid] = CreatePlayerTextDraw(playerid, 25.0, 214.0, "COLOR 01 / 12");
++    g_DealerTDColorSelected[playerid] = CreatePlayerTextDraw(playerid, 25.0, 195.0, "COLOR 01 / 20");
+     PlayerTextDrawFont(playerid, g_DealerTDColorSelected[playerid], TEXT_DRAW_FONT_1);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDColorSelected[playerid], 0.17, 0.78);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDColorSelected[playerid], 0.16, 0.72);
+     PlayerTextDrawColor(playerid, g_DealerTDColorSelected[playerid], 0x858585FF);
+-
+-    // Tạo 12 ô màu theo grid 4 cột x 3 hàng.
++    PlayerTextDrawSetShadow(playerid, g_DealerTDColorSelected[playerid], 0);
++
++    // Tạo 20 ô màu theo grid 5 cột x 4 hàng.
+     for (new colorIndex = 0; colorIndex < DEALERSHIP_COLOR_COUNT; colorIndex++)
+     {
+-        // Tính vị trí ô màu từ row/column.
+-        new const column = colorIndex % 4;
+-        new const row = colorIndex / 4;
+-
+-        new const Float:colorX = 25.0 + (column * 34.0);
+-        new const Float:colorY = 235.0 + (row * 26.0);
++        // 5 ô mỗi hàng giúp palette khít hơn và gần layout ảnh tham khảo.
++        new const column = colorIndex % 5;
++        new const row = colorIndex / 5;
++
++        new const Float:colorX = 25.0 + (column * 29.0);
++        new const Float:colorY = 216.0 + (row * 23.0);
+ 
+         g_DealerTDColor[playerid][colorIndex] =
+             CreatePlayerTextDraw(playerid, colorX, colorY, "_");
+@@ -391,17 +528,20 @@
+             g_DealerTDColor[playerid][colorIndex],
+             g_DealershipUIColor[colorIndex]
+         );
++
++        // Với left alignment, TextSize là góc phải/dưới của clickable area.
++        // Không dùng Y = 0.0 vì selectable area sẽ không click ổn định.
+         PlayerTextDrawTextSize(
+             playerid,
+             g_DealerTDColor[playerid][colorIndex],
+-            colorX + 23.0,
+-            0.0
++            colorX + 22.0,
++            colorY + 14.0
+         );
+         PlayerTextDrawLetterSize(
+             playerid,
+             g_DealerTDColor[playerid][colorIndex],
+             0.0,
+-            1.25
++            1.0
+         );
+         PlayerTextDrawSetSelectable(
+             playerid,
+@@ -410,68 +550,79 @@
+         );
+     }
+ 
+-    // Exit dưới cùng panel trái.
+-    g_DealerTDExit[playerid] = CreatePlayerTextDraw(playerid, 25.0, 330.0, "EXIT SHOWROOM");
++    // Exit dưới palette.
++    g_DealerTDExit[playerid] = CreatePlayerTextDraw(playerid, 25.0, 322.0, "EXIT SHOWROOM");
+     PlayerTextDrawFont(playerid, g_DealerTDExit[playerid], TEXT_DRAW_FONT_2);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDExit[playerid], 0.20, 0.92);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDExit[playerid], 0.18, 0.88);
+     PlayerTextDrawColor(playerid, g_DealerTDExit[playerid], 0x7A2929FF);
++    PlayerTextDrawTextSize(playerid, g_DealerTDExit[playerid], 116.0, 334.0);
++    PlayerTextDrawSetShadow(playerid, g_DealerTDExit[playerid], 0);
+     PlayerTextDrawSetSelectable(playerid, g_DealerTDExit[playerid], true);
++
++    // Giá vehicle ở giữa dưới.
++    g_DealerTDPrice[playerid] = CreatePlayerTextDraw(playerid, 320.0, 306.0, "$85,000");
++    PlayerTextDrawAlignment(playerid, g_DealerTDPrice[playerid], TEXT_DRAW_ALIGN_CENTER);
++    PlayerTextDrawFont(playerid, g_DealerTDPrice[playerid], TEXT_DRAW_FONT_2);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDPrice[playerid], 0.31, 1.08);
++    PlayerTextDrawColor(playerid, g_DealerTDPrice[playerid], 0x76D843FF);
++    PlayerTextDrawSetShadow(playerid, g_DealerTDPrice[playerid], 0);
+ 
+     // Tên vehicle ở giữa dưới.
+     g_DealerTDVehicleName[playerid] = CreatePlayerTextDraw(playerid, 320.0, 326.0, "SULTAN");
+     PlayerTextDrawAlignment(playerid, g_DealerTDVehicleName[playerid], TEXT_DRAW_ALIGN_CENTER);
+     PlayerTextDrawFont(playerid, g_DealerTDVehicleName[playerid], TEXT_DRAW_FONT_2);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDVehicleName[playerid], 0.43, 1.45);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDVehicleName[playerid], 0.40, 1.32);
+     PlayerTextDrawColor(playerid, g_DealerTDVehicleName[playerid], 0xFFFFFFFF);
+-
+-    // Giá vehicle ở giữa.
+-    g_DealerTDPrice[playerid] = CreatePlayerTextDraw(playerid, 320.0, 307.0, "$85,000");
+-    PlayerTextDrawAlignment(playerid, g_DealerTDPrice[playerid], TEXT_DRAW_ALIGN_CENTER);
+-    PlayerTextDrawFont(playerid, g_DealerTDPrice[playerid], TEXT_DRAW_FONT_2);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDPrice[playerid], 0.33, 1.17);
+-    PlayerTextDrawColor(playerid, g_DealerTDPrice[playerid], 0x76D843FF);
+-
+-    // Previous button ở giữa dưới.
+-    g_DealerTDPrevious[playerid] = CreatePlayerTextDraw(playerid, 278.0, 353.0, "<");
++    PlayerTextDrawSetShadow(playerid, g_DealerTDVehicleName[playerid], 0);
++
++    // Previous có clickable area nhỏ, không chạm nút giữa.
++    g_DealerTDPrevious[playerid] = CreatePlayerTextDraw(playerid, 286.0, 352.0, "<");
+     PlayerTextDrawFont(playerid, g_DealerTDPrevious[playerid], TEXT_DRAW_FONT_2);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDPrevious[playerid], 0.45, 1.30);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDPrevious[playerid], 0.34, 1.10);
+     PlayerTextDrawColor(playerid, g_DealerTDPrevious[playerid], 0xFFFFFFFF);
++    PlayerTextDrawTextSize(playerid, g_DealerTDPrevious[playerid], 305.0, 366.0);
++    PlayerTextDrawSetShadow(playerid, g_DealerTDPrevious[playerid], 0);
+     PlayerTextDrawSetSelectable(playerid, g_DealerTDPrevious[playerid], true);
+ 
+-    // Next button ở giữa dưới.
+-    g_DealerTDNext[playerid] = CreatePlayerTextDraw(playerid, 355.0, 353.0, ">");
++    // Next có clickable area nhỏ, tách khỏi Previous.
++    g_DealerTDNext[playerid] = CreatePlayerTextDraw(playerid, 346.0, 352.0, ">");
+     PlayerTextDrawFont(playerid, g_DealerTDNext[playerid], TEXT_DRAW_FONT_2);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDNext[playerid], 0.45, 1.30);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDNext[playerid], 0.34, 1.10);
+     PlayerTextDrawColor(playerid, g_DealerTDNext[playerid], 0xFFFFFFFF);
++    PlayerTextDrawTextSize(playerid, g_DealerTDNext[playerid], 365.0, 366.0);
++    PlayerTextDrawSetShadow(playerid, g_DealerTDNext[playerid], 0);
+     PlayerTextDrawSetSelectable(playerid, g_DealerTDNext[playerid], true);
+ 
+-    // Test Drive button.
+-    g_DealerTDTestDrive[playerid] = CreatePlayerTextDraw(playerid, 283.0, 375.0, " TEST DRIVE ");
++    // Test Drive căn giữa, clickable area đúng chiều cao.
++    g_DealerTDTestDrive[playerid] = CreatePlayerTextDraw(playerid, 279.0, 376.0, "       TEST DRIVE");
+     PlayerTextDrawUseBox(playerid, g_DealerTDTestDrive[playerid], true);
+     PlayerTextDrawBoxColor(playerid, g_DealerTDTestDrive[playerid], 0xF2F2F2E6);
+-    PlayerTextDrawTextSize(playerid, g_DealerTDTestDrive[playerid], 358.0, 0.0);
++    PlayerTextDrawTextSize(playerid, g_DealerTDTestDrive[playerid], 362.0, 391.0);
+     PlayerTextDrawFont(playerid, g_DealerTDTestDrive[playerid], TEXT_DRAW_FONT_2);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDTestDrive[playerid], 0.20, 1.0);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDTestDrive[playerid], 0.18, 0.92);
+     PlayerTextDrawColor(playerid, g_DealerTDTestDrive[playerid], 0x17191CFF);
++    PlayerTextDrawSetShadow(playerid, g_DealerTDTestDrive[playerid], 0);
+     PlayerTextDrawSetSelectable(playerid, g_DealerTDTestDrive[playerid], true);
+ 
+-    // Purchase button.
+-    g_DealerTDPurchase[playerid] = CreatePlayerTextDraw(playerid, 277.0, 402.0, "      BUY VEHICLE");
++    // Buy Vehicle căn giữa ngay dưới Test Drive.
++    g_DealerTDPurchase[playerid] = CreatePlayerTextDraw(playerid, 279.0, 402.0, "      BUY VEHICLE");
+     PlayerTextDrawUseBox(playerid, g_DealerTDPurchase[playerid], true);
+     PlayerTextDrawBoxColor(playerid, g_DealerTDPurchase[playerid], 0x68C83BE8);
+-    PlayerTextDrawTextSize(playerid, g_DealerTDPurchase[playerid], 365.0, 0.0);
++    PlayerTextDrawTextSize(playerid, g_DealerTDPurchase[playerid], 362.0, 418.0);
+     PlayerTextDrawFont(playerid, g_DealerTDPurchase[playerid], TEXT_DRAW_FONT_2);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDPurchase[playerid], 0.22, 1.12);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDPurchase[playerid], 0.18, 0.96);
+     PlayerTextDrawColor(playerid, g_DealerTDPurchase[playerid], 0xFFFFFFFF);
++    PlayerTextDrawSetShadow(playerid, g_DealerTDPurchase[playerid], 0);
+     PlayerTextDrawSetSelectable(playerid, g_DealerTDPurchase[playerid], true);
+ 
+     // Tiêu đề list bên phải.
+     g_DealerTDListTitle[playerid] = CreatePlayerTextDraw(playerid, 480.0, 89.0, "VEHICLES");
+     PlayerTextDrawFont(playerid, g_DealerTDListTitle[playerid], TEXT_DRAW_FONT_2);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDListTitle[playerid], 0.28, 1.05);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDListTitle[playerid], 0.27, 1.0);
+     PlayerTextDrawColor(playerid, g_DealerTDListTitle[playerid], 0xFFFFFFFF);
+-
+-    // Tạo 5 row danh sách xe bên phải.
++    PlayerTextDrawSetShadow(playerid, g_DealerTDListTitle[playerid], 0);
++
++    // Tạo 5 row vehicle; mỗi row có vùng click riêng và không overlap.
+     for (new vehicleIndex = 0; vehicleIndex < DEALERSHIP_VEHICLE_COUNT; vehicleIndex++)
+     {
+         new const Float:listY = 120.0 + (vehicleIndex * 42.0);
+@@ -493,7 +644,7 @@
+             playerid,
+             g_DealerTDVehicleList[playerid][vehicleIndex],
+             617.0,
+-            0.0
++            listY + 25.0
+         );
+         PlayerTextDrawFont(
+             playerid,
+@@ -503,13 +654,18 @@
+         PlayerTextDrawLetterSize(
+             playerid,
+             g_DealerTDVehicleList[playerid][vehicleIndex],
+-            0.19,
+-            1.05
++            0.18,
++            0.98
+         );
+         PlayerTextDrawColor(
+             playerid,
+             g_DealerTDVehicleList[playerid][vehicleIndex],
+             0xBFC0C2FF
++        );
++        PlayerTextDrawSetShadow(
++            playerid,
++            g_DealerTDVehicleList[playerid][vehicleIndex],
++            0
+         );
+         PlayerTextDrawSetSelectable(
+             playerid,
+@@ -523,12 +679,13 @@
+         playerid,
+         547.0,
+         338.0,
+-        "CLICK A VEHICLE~n~OR USE THE ARROWS"
++        "CLICK VEHICLE~n~TO PREVIEW"
+     );
+     PlayerTextDrawAlignment(playerid, g_DealerTDHint[playerid], TEXT_DRAW_ALIGN_CENTER);
+     PlayerTextDrawFont(playerid, g_DealerTDHint[playerid], TEXT_DRAW_FONT_1);
+-    PlayerTextDrawLetterSize(playerid, g_DealerTDHint[playerid], 0.17, 0.82);
++    PlayerTextDrawLetterSize(playerid, g_DealerTDHint[playerid], 0.16, 0.76);
+     PlayerTextDrawColor(playerid, g_DealerTDHint[playerid], 0x858585FF);
++    PlayerTextDrawSetShadow(playerid, g_DealerTDHint[playerid], 0);
+ 
+     return 1;
+ }
+@@ -909,6 +1066,9 @@
+         return 0;
+     }
+ 
++    // Dừng cinematic trước khi restore camera/player.
++    Dealership_StopCameraSweep(playerid);
++
+     Dealership_HideUI(playerid);
+     Dealership_DestroyPreviewVehicle(playerid);
+     Dealership_DestroyUI(playerid);
+@@ -1013,6 +1173,9 @@
+ 
+         g_DealershipIndex[playerid] = vehicleIndex;
+         Dealership_RefreshPreview(playerid);
++
++        // Click chọn vehicle sẽ chạy cinematic lia camera quanh xe.
++        Dealership_StartCameraSweep(playerid);
+         return 1;
+     }
+ 
+@@ -1026,6 +1189,9 @@
+         }
+ 
+         Dealership_RefreshPreview(playerid);
++
++        // Previous cũng kích hoạt cinematic camera.
++        Dealership_StartCameraSweep(playerid);
+         return 1;
+     }
+ 
+@@ -1039,6 +1205,9 @@
+         }
+ 
+         Dealership_RefreshPreview(playerid);
++
++        // Next cũng kích hoạt cinematic camera.
++        Dealership_StartCameraSweep(playerid);
+         return 1;
+     }
+ 
+@@ -1119,6 +1288,8 @@
+     g_DealershipIndex[playerid] = 0;
+     g_DealershipColorIndex[playerid] = 0;
+     g_DealershipPreviewVehicle[playerid] = INVALID_VEHICLE_ID;
++    g_DealershipCameraTimer[playerid] = 0;
++    g_DealershipCameraStage[playerid] = 0;
+     return 1;
+ }
+ 
+@@ -1129,6 +1300,7 @@
+ 
+     if (g_DealershipActive[playerid])
+     {
++        Dealership_StopCameraSweep(playerid);
+         Dealership_DestroyPreviewVehicle(playerid);
+         g_DealershipActive[playerid] = false;
+     }

@@ -1,0 +1,11 @@
+diff --git a/gamemodes/main.pwn b/gamemodes/main.pwn
+--- a/gamemodes/main.pwn
++++ b/gamemodes/main.pwn
+@@ -112,6 +112,7 @@
+ // Start with the small load/list flow and add features one at a time.
+ #include "modules/system/vehicles/simple.pwn"
+ #include "modules/system/vehicles/controls.pwn"
++#include "modules/system/vehicles/dealership.pwn"
+
+ // This fallback must remain after every command module.
+ #include "modules/system/help/unknown.pwn"

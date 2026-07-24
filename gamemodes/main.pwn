@@ -76,6 +76,11 @@
 #include "modules/core/player/account/utils.pwn"
 
 #include "modules/core/player/character/utils.pwn"
+
+// Server-authoritative health must load before systems that consume character health.
+#include "modules/core/player/health.pwn"
+#include "modules/system/medical/core.pwn"
+#include "modules/system/medical/commands.pwn"
 #include "modules/system/admin/data.pwn"
 #include "modules/core/player/chat.pwn"
 #include "modules/core/player/character/cinematic.pwn"
@@ -111,6 +116,7 @@
 // Start with the small load/list flow and add features one at a time.
 #include "modules/system/vehicles/simple.pwn"
 #include "modules/system/vehicles/controls.pwn"
+#include "modules/system/vehicles/dealership.pwn"
 
 // This fallback must remain after every command module.
 #include "modules/system/help/unknown.pwn"

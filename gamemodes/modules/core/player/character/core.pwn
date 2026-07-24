@@ -323,7 +323,17 @@ public OnCharacterLoaded(playerid)
         s_CharacterVirtualWorld[playerid]
     );
 
+    // Character data is now valid for gameplay systems.
     s_CharacterLoaded[playerid] = true;
+
+    // Initialize server-authoritative health from persistent character data.
+    // From this point onward pHealth/pArmour are the source of truth.
+    PlayerHealth_LoadCharacter(
+        playerid,
+        s_CharacterHealth[playerid],
+        s_CharacterArmour[playerid]
+    );
+    Medical_LoadCharacter(playerid);
 
     // Chua hoan tat ho so -> bat buoc vao Character Creator.
     if (!s_CharacterCreated[playerid])

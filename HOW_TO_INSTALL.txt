@@ -1,0 +1,51 @@
+LS:RP MEDICAL PHASE 2
+=====================
+
+Yêu cầu:
+- Phase 1 Health Core đã được cài.
+- gamemodes/modules/core/player/health.pwn đã tồn tại.
+- gamemodes/modules/system/medical/core.pwn hiện là bản Phase 1.
+
+Cài:
+1. Copy:
+   gamemodes/modules/system/medical/core.pwn
+   gamemodes/modules/system/medical/commands.pwn
+
+2. Apply patch để thêm include commands.pwn:
+   git apply --check MEDICAL_PHASE2_EXISTING_FILES.patch
+   git apply MEDICAL_PHASE2_EXISTING_FILES.patch
+
+LƯU Ý:
+- Nếu bạn copy đè core.pwn trước khi apply patch, phần core của patch sẽ không apply.
+  Khi đó chỉ cần thêm dòng này vào main.pwn:
+      #include "modules/system/medical/commands.pwn"
+  ngay sau:
+      #include "modules/system/medical/core.pwn"
+
+Medical Gate dùng cho system sau:
+    Medical_RequireAction(playerid, MEDICAL_ACTION_JOB)
+    Medical_RequireAction(playerid, MEDICAL_ACTION_INVENTORY)
+    Medical_RequireAction(playerid, MEDICAL_ACTION_VEHICLE)
+    Medical_RequireAction(playerid, MEDICAL_ACTION_DRIVE)
+    Medical_RequireAction(playerid, MEDICAL_ACTION_WEAPON)
+    Medical_RequireAction(playerid, MEDICAL_ACTION_FACTION)
+    Medical_RequireAction(playerid, MEDICAL_ACTION_PROPERTY)
+
+Behavior:
+NORMAL:
+- Full gameplay.
+
+INJURED:
+- Không weapon/sprint/jump/drive/job/faction/property.
+- Vẫn RP chat, communication, walk, inventory/interaction nhẹ.
+
+DOWNED:
+- Khóa movement, weapon, vehicle và hầu hết commands.
+- Chỉ whitelist /me /do /b /pm /call /911 /acceptdeath.
+- Countdown 5 phút.
+- /acceptdeath mở sau 2 phút.
+- Stabilized sẽ pause countdown.
+
+DEAD:
+- Chỉ /me /do /b /acceptdeath.
+- /acceptdeath -> All Saints Hospital.

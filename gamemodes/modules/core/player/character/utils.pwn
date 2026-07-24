@@ -482,22 +482,18 @@ Character_Save(playerid)
         Float:x,
         Float:y,
         Float:z,
-        Float:a,
-        Float:health,
-        Float:armour;
+        Float:a;
 
     GetPlayerPos(playerid, x, y, z);
     GetPlayerFacingAngle(playerid, a);
-
-    GetPlayerHealth(playerid, health);
-    GetPlayerArmour(playerid, armour);
 
     s_CharacterSkin[playerid] = GetPlayerSkin(playerid);
     s_CharacterCash[playerid] = GetPlayerMoney(playerid);
     s_CharacterLevel[playerid] = GetPlayerScore(playerid);
 
-    s_CharacterHealth[playerid] = health;
-    s_CharacterArmour[playerid] = armour;
+    // Never trust client health when saving persistent character data.
+    s_CharacterHealth[playerid] = PlayerHealth_Get(playerid);
+    s_CharacterArmour[playerid] = PlayerHealth_GetArmour(playerid);
 
     s_CharacterPosX[playerid] = x;
     s_CharacterPosY[playerid] = y;
